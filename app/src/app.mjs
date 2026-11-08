@@ -9,8 +9,6 @@ import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { drawWorld } from './shatter-draw.mjs';
 
-const TOAST_INTERVAL = 2;
-const TOAST_DURATION = 3;
 const MAX_FRAME_STEP = 1 / 30;
 const DIRTY_MARGIN = 48;
 
@@ -26,7 +24,6 @@ let world = null;
 let controller = null;
 let cursor = { x: 0, y: 0 };       // y up
 let ignoring = true;
-let lastToast = -Infinity;
 let glassWasActive = false;
 let dirty = [];                    // rects (y down) painted on the mascot layer last frame
 
@@ -58,10 +55,7 @@ function showBubble(text, duration) {
 
 function onSystemEvent({ type, name }) {
   const event = describeEvent(type, name);
-  controller.react(event);
-  if (clock() - lastToast <= TOAST_INTERVAL) return;
-  lastToast = clock();
-  showBubble(event.caption, TOAST_DURATION);
+  controller.react(event);                       // the mascot only reacts with a hop, it never comments
 }
 
 const inside = (r, p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
@@ -169,7 +163,7 @@ async function start() {
   });
   controller.onClick = () => showBubble(CLICK_PHRASE, Config.bubbleDuration);
 
-  api.onCursor((p) => { cursor = { x: p.x, y: screen.height - p.y }; });
+  api.onCursor((p) => { cursor = p; });   // main already sends y up
   api.onScreen((next) => { applyScreen(next); controller.pos = { ...controller.pos }; });
   api.onSystemEvent(onSystemEvent);
   api.onTrigger((kind) => controller.trigger(kind));

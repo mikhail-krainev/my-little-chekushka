@@ -41,8 +41,7 @@ jobs:
         with:
           name: chekushka-${{ matrix.name }}
           path: |
-            app/dist/*.dmg
-            app/dist/*.zip
+            app/dist/*.pkg
             app/dist/*.exe
           if-no-files-found: error
 

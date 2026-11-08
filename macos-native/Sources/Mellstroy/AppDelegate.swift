@@ -5,8 +5,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let watcher = SystemWatcher()
     private let bubble = BubbleController()
     private var statusItem: NSStatusItem?
-    private var lastToast = Date.distantPast
-    private let toastInterval: TimeInterval = 2
 
     private static let actions: [(title: String, kind: Performance.Kind)] = [
         ("Сесть на пол", .sit),
@@ -43,9 +41,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handle(_ event: SystemEvent) {
         mascot.react(to: event)
-        guard Date().timeIntervalSince(lastToast) > toastInterval else { return }
-        lastToast = Date()
-        bubble.show(event.caption, following: { [weak self] in self?.mascot.frame ?? .zero }, duration: 3)
     }
 
     // MARK: Menu bar

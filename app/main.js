@@ -98,7 +98,6 @@ function createTray() {
     { label: 'Выход', click: () => app.quit() },
   ]);
   tray.setContextMenu(menu);
-  if (process.platform === 'darwin') tray.setTitle('🍾');
 }
 
 ipcMain.handle('screen:get', () => screenInfo(currentDisplay));
