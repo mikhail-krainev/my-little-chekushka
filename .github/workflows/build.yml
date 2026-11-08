@@ -36,7 +36,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
       - run: npm ci
-      - run: npm run ${{ matrix.script }} -- --publish never
+      # GitHub release downloads (Electron binaries) sometimes answer 504: retry a few times
+      - name: Package
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            npm run ${{ matrix.script }} -- --publish never && exit 0
+            echo "attempt $attempt failed, retrying"; sleep 20
+          done
+          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: chekushka-${{ matrix.name }}
