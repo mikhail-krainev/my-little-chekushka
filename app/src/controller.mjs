@@ -1,21 +1,25 @@
-// Owns the mascot's life: roaming, jumping, scripted floor actions (sit, sleep, warm-up, drinking),
+// Owns the mascot's life: roaming, jumping, scripted floor actions (sit, sleep, warm-up, drinking, smoking),
 // drag & throw physics, reactions to system events, hanging from the cursor.
 // Coordinates: y up, origin bottom-left of the screen layer. `pos` is the origin of the mascot box (sprite + margin).
 import * as Animator from './animator.mjs';
 import { Config, Side, clamp, rand } from './geometry.mjs';
-import { newFace } from './pose.mjs';
-import { handPoint, mouthPoint } from './renderer.mjs';
+import { blendPoses, newFace } from './pose.mjs';
+import { emberPoint, handPoint, mouthPoint } from './renderer.mjs';
 
 const SIZE = Config.mascotSize;
 
 /** Events that make the mascot hop. */
 const EXCITING = new Set(['excited', 'surprised']);
+/** Seconds over which one action eases into the next instead of snapping. */
+const BLEND_TIME = 0.22;
+/** Actions done facing the working side. */
+const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah']);
 
 export class MascotController {
   /**
    * @param env.getScreen () => { work: {minX, minY, maxX, maxY} }  the usable screen area
    * @param env.getCursor () => {x, y}                               global cursor, y up
-   * @param env.overlay   { throwBottle(kind, origin, velocity), spit(origin, target) }
+   * @param env.overlay   { throwBottle(kind, origin, velocity), spit(origin, target), smoke(origin, opts), burn(at) }
    * @param env.clock     () => seconds
    */
   constructor(env) {
@@ -25,8 +29,10 @@ export class MascotController {
     this.pos = { x: 0, y: 0 };
     this.vel = { x: 0, y: 0 };
     this.pendingPerformance = null;
-    this.didThrow = false;
+    this.cueIndex = 0;
     this.spitTarget = null;
+    this.blendFrom = null;
+    this.blendStart = 0;
     this.facingRight = true;
     this.walkPhase = 0;
     this.nextBlink = 0;
@@ -131,8 +137,7 @@ export class MascotController {
       case 'perform': {
         const el = t - st.start;
         pose = Animator.performance(st.perf, el, base);
-        const release = Animator.releaseTime(st.perf);
-        if (release !== null && !this.didThrow && el >= release) this.#releaseHeldItem(st.perf, release, base);
+        this.#fireCues(st.perf, el, base);
         if (el >= st.perf.duration) this.state = { type: 'idle', until: t + rand(0.6, 1.5) };
         break;
       }
@@ -181,6 +186,11 @@ export class MascotController {
     if (t > this.nextBlink) { this.blinkUntil = t + 0.12; this.nextBlink = t + rand(2, 5); }
     pose.isBlinking = t < this.blinkUntil;
     pose.time = clock;
+    if (this.state !== st) { this.blendFrom = this.pose; this.blendStart = t; }    // ease into the next action
+    else if (this.blendFrom) {
+      const k = (t - this.blendStart) / BLEND_TIME;
+      if (k >= 1) this.blendFrom = null; else pose = blendPoses(this.blendFrom, pose, k * k * (3 - 2 * k));
+    }
     this.pose = pose;
     return pose;
   }
@@ -236,9 +246,11 @@ export class MascotController {
     else if (roll < 63) this.#schedule(Animator.makePerformance('stretch', { side: this.dir }));
     else if (roll < 70) this.#schedule(Animator.makePerformance('vodka', { side: this.dir }));
     else if (roll < 77) this.#schedule(Animator.makePerformance('beer', { side: this.dir }));
-    else if (roll < 84) this.#schedule(Animator.makePerformance('spit', { side: this.dir }));
-    else if (roll < 92) this.#hop(b);
-    else if (roll < 97) this.#jumpToCursor(b);
+    else if (roll < 82) this.#schedule(Animator.makePerformance('spit', { side: this.dir }));
+    else if (roll < 87) this.#schedule(Animator.makePerformance('smoke', { side: this.dir }));
+    else if (roll < 91) this.#schedule(Animator.makePerformance('hookah', { side: this.dir }));
+    else if (roll < 95) this.#hop(b);
+    else if (roll < 98) this.#jumpToCursor(b);
     else this.state = { type: 'idle', until: t + rand(1, 3) };
   }
 
@@ -252,10 +264,18 @@ export class MascotController {
 
   #begin(perf) {
     const p = { ...perf };
-    this.didThrow = false;
+    this.cueIndex = 0;
     if (p.kind === 'spit') this.#aimSpit(p);
-    if (p.kind === 'vodka' || p.kind === 'beer' || p.kind === 'spit') this.facingRight = p.side > 0;
+    if (p.kind === 'hookah') this.#roomForHookah(p);
+    if (SIDED.has(p.kind)) this.facingRight = p.side > 0;
     this.state = { type: 'perform', perf: p, start: this.now };
+  }
+
+  /** The hookah stands beside the mascot: put it on the side with room on the screen. */
+  #roomForHookah(perf) {
+    const b = this.#bounds, centre = this.pos.x + SIZE.width / 2, need = 110;
+    if (perf.side > 0 && centre + need > b.maxX) perf.side = -1;
+    else if (perf.side < 0 && centre - need < b.minX) perf.side = 1;
   }
 
   /** Picks a random spot anywhere on the screen to spit at and turns toward it. */
@@ -281,26 +301,43 @@ export class MascotController {
     this.state = { type: 'crouch', jump, start: this.now };
   }
 
-  // MARK: Throwing the empty bottle, spitting
+  // MARK: Things that leave the mascot: thrown bottle, spit, smoke, cigarette burn
 
-  #releaseHeldItem(perf, release, base) {
-    this.didThrow = true;
-    if (perf.kind === 'spit') this.#spit(perf, release, base); else this.#throwBottle(perf, release, base);
+  /** Fires every cue of the scene whose time has come, each once. The pose at the cue time places the effect. */
+  #fireCues(perf, elapsed, base) {
+    const list = Animator.cues(perf);
+    while (this.cueIndex < list.length && elapsed >= list[this.cueIndex].at) {
+      const cue = list[this.cueIndex++];
+      const pose = Animator.performance(perf, cue.at, base);
+      switch (cue.type) {
+        case 'throw': this.#throwBottle(perf, pose); break;
+        case 'spit': this.#spit(pose); break;
+        case 'exhale':
+          this.env.overlay.smoke(this.#spriteToScreen(mouthPoint(pose)), { size: cue.size, life: cue.life, drift: perf.side * (cue.drift ?? 1) });
+          break;
+        case 'burn': {
+          const ember = emberPoint(pose);
+          if (ember) this.env.overlay.burn(this.#spriteToScreen(ember));
+          break;
+        }
+        default: throw new Error(`unknown cue: ${cue.type}`);
+      }
+    }
   }
 
   #spriteToScreen(p) {
     return { x: this.pos.x + Config.spritePad + p.x * Config.spriteScale, y: this.pos.y + Config.spritePad + p.y * Config.spriteScale };
   }
 
-  #spit(perf, release, base) {
+  #spit(pose) {
     if (!this.spitTarget) return;
-    const mouth = mouthPoint(Animator.performance(perf, release, base));
+    const mouth = mouthPoint(pose);
     this.env.overlay.spit(this.#spriteToScreen(mouth), this.spitTarget);
     this.spitTarget = null;
   }
 
-  #throwBottle(perf, release, base) {
-    const hand = handPoint(Animator.performance(perf, release, base), Side.fromSign(perf.side));
+  #throwBottle(perf, pose) {
+    const hand = handPoint(pose, Side.fromSign(perf.side));
     const velocity = { x: perf.side * rand(480, 640), y: rand(330, 480) };
     this.env.overlay.throwBottle(perf.kind, this.#spriteToScreen(hand), velocity);
   }

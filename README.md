@@ -14,11 +14,11 @@
 
 <br>
 
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.0.4/Chekushka-1.0.4-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.0.4/Chekushka-1.0.4-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.0.4/Chekushka-1.0.4-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
 
-<sub>Версия 1.0.4 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
+<sub>Версия 1.1.0 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
 
 <br><br>
 
@@ -65,13 +65,19 @@
   - сесть и зевнуть, спать лёжа на боку;
   - зарядка: круги руками, наклоны, приседания, прыжки;
   - чекушка 0,2 л и пиво 0,5 л: открыть, выпить, «брр», покачаться, с шансом 50 % стошнить, бросить бутылку;
-  - плюнуть в экран: плевок попадает в случайную точку, стекает каплями и высыхает.
+  - плюнуть в экран: плевок попадает в случайную точку, стекает каплями и высыхает;
+  - покурить сигарету: достаёт из кармана, прикуривает от зажигалки, делает три затяжки и тушит бычок прямо об экран — жжёное пятно держится 5 секунд;
+  - покурить кальян: ставит кальян рядом, садится и тянет через мундштук (вода булькает, угли разгораются), каждый клуб дыма висит 5 секунд и исчезает.
+- Все дорисованные предметы и эффекты (бутылки, сигарета, кальян, дым, осколки, плевок, рвота, ожог) нарисованы в той же «пиксельной фотографии», что и сам маскот: приглушённые тона, мягкие блики и зерно.
+- Действия плавно перетекают одно в другое, без рывков.
 - Пустая бутылка разбивается об пол, осколки и брызги разлетаются по рабочему столу и через 5 секунд исчезают.
 - Реагирует на новые и удалённые файлы в `Desktop`, `Documents`, `Downloads` и на запуск и закрытие приложений: подпрыгивает, но ничего не комментирует.
 
 | Выпивка и последствия | Плевок |
 |---|---|
 | ![Выпивка](docs/screenshots/drinks.png) | ![Плевок](docs/screenshots/spit.png) |
+| **Сигарета** | **Кальян** |
+| ![Сигарета](docs/screenshots/smoke.png) | ![Кальян](docs/screenshots/hookah.png) |
 
 <details>
 <summary>Разбитое стекло</summary>
@@ -92,8 +98,8 @@
 cd app
 npm install
 npm start                    # запуск
-npm start -- --demo vodka    # сразу начать действие: vodka | beer | sit | sleep | stretch | spit
-npm test                     # тесты логики анимации и физики стекла
+npm start -- --demo smoke    # сразу начать действие: vodka | beer | sit | sleep | stretch | spit | smoke | hookah
+npm test                     # тесты анимации, стекла, дыма и ожогов
 npm run screenshots          # перерисовать картинки для README в docs/screenshots
 ```
 
@@ -104,7 +110,7 @@ npm run dist:mac    # .pkg для macOS (arm64 и x64)
 npm run dist:win    # установщик .exe для Windows
 ```
 
-Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.0.1 && git push origin v1.0.1`.
+Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.1.0 && git push origin v1.1.0`.
 
 ## 🧩 Устройство
 
@@ -114,9 +120,12 @@ app/                  кроссплатформенное приложение 
   watcher.js          файлы (fs.watch) и запущенные приложения
   src/                логика и отрисовка
     animator.mjs      чистые функции: время → поза
+    smoking.mjs       сцены с сигаретой и кальяном
+    artstyle.mjs      общая «фотографическая» стилистика дорисованных предметов
     controller.mjs    «жизнь»: состояния, физика, мышь, курсор
     renderer.mjs      сборка маскота из спрайтов, лицо, эффекты
-    shatter.mjs       физика стекла и плевков
+    props.mjs         бутылки, сигарета, зажигалка, кальян
+    shatter.mjs       физика стекла, плевков, дыма и ожогов
   assets/sprites/     детали маскота (тело, руки, ноги)
   test/               тесты (node --test)
 macos-native/         первоначальная нативная версия на Swift/AppKit (только macOS)

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { BrowserWindow } = require('electron');
 
-const SHEETS = ['poses', 'drinks', 'spit', 'glass'];
+const SHEETS = ['poses', 'drinks', 'spit', 'smoke', 'hookah', 'glass'];
 const POLL_MS = 50;
 const TIMEOUT_MS = 15_000;
 

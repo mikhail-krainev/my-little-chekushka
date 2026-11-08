@@ -16,6 +16,8 @@ export function newEffects() {
     capOrigin: { x: 0, y: 0 },
     sweat: 0,
     vomit: null,           // { elapsed, flowEnd, side, isBeer, fade }
+    emberSmoke: 0,         // 0...1 thin smoke curling up from a held cigarette
+    hookah: null,          // { side, scale, glow, bubbles, time, distance } hookah standing on the floor
   };
 }
 
@@ -29,7 +31,8 @@ export function newPose(face = newFace()) {
     squash: 0,                   // + squat (wider, shorter), - stretched
     hands: { left: { ...MascotRig.restHand.left }, right: { ...MascotRig.restHand.right } },
     feet: { left: newFoot(), right: newFoot() },
-    prop: null,                  // { kind, side, angle, fill, capOn, scale }
+    prop: null,                  // held item { kind, side, angle, scale, ... } (bottle: fill, capOn; cigarette: burnt, glow, depth)
+    prop2: null,                 // second held item (the lighter)
     effects: newEffects(),
     hangTilt: 0,                 // swing around the hand pinned to the cursor
     time: 0,                     // seconds, drives decorations
@@ -39,3 +42,33 @@ export function newPose(face = newFace()) {
 export const mirrored = (p, side) => (side > 0 ? p : { x: MascotRig.size.width - p.x, y: p.y });
 
 export { Side };
+
+/**
+ * Pose between `a` and `b` (k 0 = a, 1 = b) used to smooth the switch from one action to the next.
+ * Body transforms with different pivots are re-expressed around `b`'s pivot first, so nothing jumps.
+ * Face, props and effects come from `b`.
+ */
+export function blendPoses(a, b, k) {
+  if (k >= 1) return b;
+  const lerp = (x, y) => x + (y - x) * k;
+  const mixPt = (p, q) => ({ x: lerp(p.x, q.x), y: lerp(p.y, q.y) });
+  const shiftA = shiftAround(a, b.pivot);
+  const out = { ...b, hands: {}, feet: {} };
+  out.shift = mixPt(shiftA, b.shift);
+  out.tilt = lerp(a.tilt, b.tilt);
+  out.squash = lerp(a.squash, b.squash);
+  out.hangTilt = lerp(a.hangTilt, b.hangTilt);
+  for (const side of Side.both) {
+    out.hands[side] = mixPt(a.hands[side], b.hands[side]);
+    out.feet[side] = { offset: mixPt(a.feet[side].offset, b.feet[side].offset), toeUp: lerp(a.feet[side].toeUp, b.feet[side].toeUp) };
+  }
+  return out;
+}
+
+/** Shift that gives pose `p` the same body transform when it turns about `pivot` instead of `p.pivot`. */
+function shiftAround(p, pivot) {
+  const dx = pivot.x - p.pivot.x, dy = pivot.y - p.pivot.y;
+  const sx = dx * (1 + p.squash * 0.6), sy = dy * (1 - p.squash);
+  const c = Math.cos(p.tilt), s = Math.sin(p.tilt);
+  return { x: p.shift.x + (sx * c - sy * s) - dx, y: p.shift.y + (sx * s + sy * c) - dy };
+}

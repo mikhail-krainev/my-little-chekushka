@@ -1,4 +1,4 @@
-// Renderer entry: one transparent full-screen layer that holds the mascot, its speech bubble and the broken glass.
+// Renderer entry: one transparent full-screen layer that holds the mascot, its speech bubble, broken glass, smoke and burns.
 // The main process keeps the window click-through; this module asks it to catch the mouse only over the mascot.
 import { Bubble } from './bubble.mjs';
 import { MascotController } from './controller.mjs';
@@ -7,7 +7,7 @@ import { Config } from './geometry.mjs';
 import { CLICK_PHRASE } from './phrases.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { ShatterWorld } from './shatter.mjs';
-import { drawWorld } from './shatter-draw.mjs';
+import { drawSmokes, drawWorld } from './shatter-draw.mjs';
 
 const MAX_FRAME_STEP = 1 / 30;
 const DIRTY_MARGIN = 48;
@@ -16,8 +16,10 @@ const api = window.mellstroy;
 const clock = () => performance.now() / 1000;
 const mainCanvas = document.getElementById('mascot-layer');
 const glassCanvas = document.getElementById('glass-layer');
+const smokeCanvas = document.getElementById('smoke-layer');
 const mainCtx = mainCanvas.getContext('2d');
 const glassCtx = glassCanvas.getContext('2d');
+const smokeCtx = smokeCanvas.getContext('2d');
 
 let screen = null;                 // { width, height, dpr, work: {minX, minY, maxX, maxY} }, y up
 let world = null;
@@ -25,6 +27,7 @@ let controller = null;
 let cursor = { x: 0, y: 0 };       // y up
 let ignoring = true;
 let glassWasActive = false;
+let smokeWasActive = false;
 let dirty = [];                    // rects (y down) painted on the mascot layer last frame
 
 const bubble = new Bubble(clock);
@@ -38,7 +41,7 @@ function applyScreen(info) {
     width: info.width, height: info.height, dpr,
     work: { minX: w.x, maxX: w.x + w.width, maxY: info.height - w.y, minY: info.height - (w.y + w.height) },
   };
-  for (const c of [mainCanvas, glassCanvas]) {
+  for (const c of [mainCanvas, glassCanvas, smokeCanvas]) {
     c.width = Math.round(info.width * dpr); c.height = Math.round(info.height * dpr);
     c.style.width = `${info.width}px`; c.style.height = `${info.height}px`;
   }
@@ -133,6 +136,19 @@ function drawGlassLayer() {
   glassCtx.restore();
 }
 
+function drawSmokeLayer() {
+  const active = world.smokes.length > 0;
+  if (!active && !smokeWasActive) return;
+  smokeWasActive = active;
+  smokeCtx.setTransform(1, 0, 0, 1, 0, 0);
+  smokeCtx.clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
+  if (!active) return;
+  smokeCtx.save();
+  beginYUp(smokeCtx, screen.height, screen.dpr);
+  drawSmokes(smokeCtx, world);
+  smokeCtx.restore();
+}
+
 let last = clock();
 function frame() {
   requestAnimationFrame(frame);
@@ -145,6 +161,7 @@ function frame() {
   world.step(dt);
   drawMascotLayer();
   drawGlassLayer();
+  drawSmokeLayer();
 }
 
 async function start() {
@@ -159,6 +176,8 @@ async function start() {
     overlay: {
       throwBottle: (kind, origin, velocity) => { glassWasActive = true; world.throwBottle(kind, origin, velocity); },
       spit: (origin, target) => { glassWasActive = true; world.launchSpit(origin, target); },
+      smoke: (origin, opts) => { glassWasActive = true; world.puffSmoke(origin, opts); },
+      burn: (at) => { glassWasActive = true; world.burn(at); },
     },
   });
   controller.onClick = () => showBubble(CLICK_PHRASE, Config.bubbleDuration);

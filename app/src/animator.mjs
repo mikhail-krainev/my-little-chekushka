@@ -1,9 +1,11 @@
 // Pure functions: state and time in, pose out. No DOM, so poses are testable and previewable.
 import { MascotRig, Side, lerp, rand } from './geometry.mjs';
 import { newPose, newFoot, mirrored } from './pose.mjs';
+import { aimAtMouth, bump, ease, mix, mouthSwing, seg, swing } from './motion.mjs';
+import { HOOKAH, SMOKE, hookah, smoke } from './smoking.mjs';
 import { tipDistance } from './props.mjs';
 
-export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit'];
+export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit', 'smoke', 'hookah'];
 /** Chance that a drinker is sick after the bottle. */
 export const VOMIT_CHANCE = 0.5;
 export const STRETCH_DURATION = 11.6;
@@ -17,13 +19,7 @@ const HAWK_START = 0.4, HAWK_END = 1.5, HAWK_PULSES = 3, DRAW_BACK_END = 1.95;
 
 // MARK: Helpers
 
-export const seg = (t, a, b) => (b > a ? Math.min(1, Math.max(0, (t - a) / (b - a))) : (t >= b ? 1 : 0));
-export const ease = (x) => x * x * (3 - 2 * x);
-/** Bell between a and b (0 outside, 1 in the middle). */
-export const bump = (t, a, b) => Math.sin(seg(t, a, b) * Math.PI);
-export const mix = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) });
-/** Hand target for an arm swinging rigidly about the shoulder (see `MascotRig.armTarget`). */
-export const swing = (side, angle) => MascotRig.armTarget(side, angle);
+export { seg, ease, bump, mix, swing } from './motion.mjs';
 const fist = swing;
 
 /** A scripted action that runs on the floor. `side` +1 acts toward the right (working arm is the right one), -1 mirrored. */
@@ -35,6 +31,8 @@ export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vom
     case 'stretch': duration = STRETCH_DURATION; break;
     case 'vodka': case 'beer': sick = vomits; duration = drinkTimeline(kind, vomits).end; break;
     case 'spit': duration = SPIT_DURATION; break;
+    case 'smoke': duration = SMOKE.end; break;
+    case 'hookah': duration = HOOKAH.end; break;
     default: throw new Error(`unknown performance: ${kind}`);
   }
   return { kind, duration, side, vomits: sick };
@@ -45,8 +43,10 @@ export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vom
 export function idle(t, base) {
   const p = newPose(base);
   p.time = t;
-  p.squash = Math.sin(t * 2.3) * 0.010;
+  p.squash = Math.sin(t * 2.3) * 0.010;                  // breathing
   p.tilt = Math.sin(t * 1.1) * 0.012;
+  p.shift.x = Math.sin(t * 0.45) * 1.2;                  // slow weight shift from foot to foot
+  for (const side of Side.both) p.feet[side] = newFoot(-p.shift.x * 0.4, Math.max(0, Side.sign(side) * p.shift.x) * 0.5, 0);
   for (const side of Side.both) p.hands[side] = swing(side, MascotRig.restSwing + Math.sin(t * 1.6 + (side === 'left' ? 0 : 1.3)) * 0.02);
   return p;
 }
@@ -150,6 +150,8 @@ export function performance(perf, t, base) {
     case 'vodka': p = drink('vodka', perf.vomits, t, perf.side, base); break;
     case 'beer': p = drink('beer', perf.vomits, t, perf.side, base); break;
     case 'spit': p = spit(t, perf.side, base); break;
+    case 'smoke': p = smoke(t, perf.side, base); break;
+    case 'hookah': p = hookah(t, perf.side, base); break;
     default: throw new Error(`unknown performance: ${perf.kind}`);
   }
   p.time = t;
@@ -266,25 +268,29 @@ export function drinkTimeline(kind, vomits = false) {
   return tl;
 }
 
-/** Bottle angle (right-hand frame) that puts the neck tip on the mascot's mouth for a hand at `hand`. */
-const aimAtMouth = (hand) => Math.atan2(-(MascotRig.mouth.x - hand.x), MascotRig.mouth.y + 1 - hand.y);
-
-/** Arm swing (right arm) that puts the fist exactly one bottle length from the mouth, so the neck tip reaches it. */
-function chugSwing(kind) {
-  const s = MascotRig.shoulder.right, m = MascotRig.mouth, len = MascotRig.armLength;
-  const dx = s.x - m.x, dy = s.y - m.y, reach = Math.hypot(dx, dy);
-  const tip = tipDistance(kind);
-  const sine = (tip * tip - dx * dx - dy * dy - len * len) / (2 * len * reach);
-  return Math.asin(Math.max(-1, Math.min(1, sine))) + Math.atan2(dy, dx);
+/**
+ * Moments when a scene affects the screen around the mascot, in time order:
+ * `throw` (empty bottle leaves the hand), `spit`, `exhale` (a smoke cloud leaves the mouth; `drift` is relative to the
+ * scene side), `burn` (cigarette pressed out).
+ */
+export function cues(perf) {
+  switch (perf.kind) {
+    case 'vodka': case 'beer': return [{ at: drinkTimeline(perf.kind, perf.vomits).release, type: 'throw' }];
+    case 'spit': return [{ at: SPIT_RELEASE, type: 'spit' }];
+    case 'smoke': return [
+      ...Array.from({ length: SMOKE.puffs }, (_, i) => ({ at: SMOKE.firstPuff + i * SMOKE.cycle + SMOKE.exhaleAt, type: 'exhale', size: 0.55, life: SMOKE.cloudLife, drift: -1 })),
+      { at: SMOKE.burnAt, type: 'burn' },
+    ];
+    case 'hookah': return Array.from({ length: HOOKAH.puffs }, (_, i) => (
+      { at: HOOKAH.firstPuff + i * HOOKAH.cycle + HOOKAH.exhaleAt, type: 'exhale', size: 1, life: HOOKAH.cloudLife, drift: -1 }));
+    default: return [];
+  }
 }
 
-/** The moment something leaves the mascot (bottle thrown, spit launched), or null for scenes without one. */
+/** The moment the first thing leaves the mascot (bottle thrown, spit launched), or null for scenes without one. */
 export function releaseTime(perf) {
-  switch (perf.kind) {
-    case 'vodka': case 'beer': return drinkTimeline(perf.kind, perf.vomits).release;
-    case 'spit': return SPIT_RELEASE;
-    default: return null;
-  }
+  const first = cues(perf).find((c) => c.type === 'throw' || c.type === 'spit');
+  return first ? first.at : null;
 }
 
 export function drink(kind, vomits, t, side, base) {
@@ -297,7 +303,7 @@ export function drink(kind, vomits, t, side, base) {
   const toRight = (pt) => mirrored(pt, side);
   const prop = { kind, side: work, angle: 0, fill: 1, capOn: true, scale: ease(seg(t, tl.pull - 0.05, tl.pull + 0.2)) };
   let hasProp = t >= tl.pull - 0.05 && t < tl.release;
-  const chug = chugSwing(kind);
+  const chug = mouthSwing(kind);
   p.hands[work] = arm(rest); p.hands[support] = fist(support, rest);
 
   if (t < tl.pull) {                                          // reach out for the bottle

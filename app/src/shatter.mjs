@@ -18,6 +18,14 @@ export function mulberry32(seed) {
 export const DROPLET_LIFETIME = 0.8;
 export const SPLAT_LIFETIME = 5;
 export const SPLAT_FADE = 1;
+/** Hookah smoke clouds hang for this long, then they are gone. */
+export const HOOKAH_SMOKE_LIFETIME = 5;
+export const SMOKE_FADE = 0.9;
+/** A cigarette burn on the screen stays for this long. */
+export const BURN_LIFETIME = 5;
+export const BURN_FADE = 0.8;
+export const BURN_GLOW_TIME = 1.6;
+const SMOKE_GROW_TIME = 0.7;
 
 export const shardAlpha = (s) => {
   const fadeStart = Config.shardLifetime - Config.shardFadeDuration;
@@ -29,6 +37,15 @@ export function globPosition(g) {
   return { x: g.start.x + (g.target.x - g.start.x) * k, y: g.start.y + (g.target.y - g.start.y) * k + g.arc * Math.sin(k * Math.PI) };
 }
 export const splatAlpha = (s) => (s.age < SPLAT_LIFETIME - SPLAT_FADE ? 1 : Math.max(0, 1 - (s.age - (SPLAT_LIFETIME - SPLAT_FADE)) / SPLAT_FADE));
+/** Smoke cloud: alpha fades over the last `SMOKE_FADE` seconds; scale grows quickly, then keeps billowing slowly. */
+export const smokeAlpha = (s) => Math.max(0, Math.min(1, (s.life - s.age) / SMOKE_FADE, s.age / 0.12));
+export const smokeScale = (s) => {
+  const k = Math.min(1, s.age / SMOKE_GROW_TIME);
+  return 0.35 + 0.55 * (1 - (1 - k) ** 3) + 0.1 * (s.age / s.life);
+};
+export const burnAlpha = (b) => Math.max(0, Math.min(1, (BURN_LIFETIME - b.age) / BURN_FADE));
+/** Glow of the still-hot spot right after the butt was pressed out, 1 ... 0. */
+export const burnGlow = (b) => Math.max(0, 1 - b.age / BURN_GLOW_TIME);
 export const dripLength = (s, d) => Math.min(d.maxLength, d.speed * s.age * (1 - 0.12 * s.age));
 
 export class ShatterWorld {
@@ -41,11 +58,14 @@ export class ShatterWorld {
     this.droplets = [];
     this.spits = [];
     this.splats = [];
+    this.smokes = [];
+    this.burns = [];
     this.random = mulberry32(seed);
   }
 
   get isEmpty() {
-    return !(this.bottles.length || this.shards.length || this.droplets.length || this.spits.length || this.splats.length);
+    return !(this.bottles.length || this.shards.length || this.droplets.length || this.spits.length || this.splats.length
+      || this.smokes.length || this.burns.length);
   }
 
   rand(a, b) { return a + this.random() * (b - a); }
@@ -60,12 +80,39 @@ export class ShatterWorld {
     this.spits.push({ start: { ...from }, target: { ...target }, flight: 0.45 + distance / 2200, arc: 40 + distance * 0.12, age: 0 });
   }
 
+  /** A cloud of exhaled smoke at `from` drifting toward `drift` (+1 right, -1 left); `size` 1 = a big hookah cloud. */
+  puffSmoke(from, { size = 1, life = HOOKAH_SMOKE_LIFETIME, drift = 1 } = {}) {
+    this.smokes.push({
+      pos: { ...from }, vel: { x: drift * this.rand(22, 38) * size, y: this.rand(10, 20) },
+      size, life, drift, age: 0, seed: this.randInt(0, 99999),
+    });
+  }
+
+  /** A cigarette pressed out on the screen at `at`. */
+  burn(at) {
+    this.burns.push({ pos: { ...at }, age: 0, seed: this.randInt(0, 99999) });
+  }
+
   step(dtRaw) {
     const dt = Math.min(dtRaw, 1 / 30);
     this.#stepBottles(dt);
     this.#stepShards(dt);
     this.#stepDroplets(dt);
     this.#stepSpits(dt);
+    this.#stepSmoke(dt);
+  }
+
+  #stepSmoke(dt) {
+    for (const s of this.smokes) {
+      s.age += dt;
+      s.pos.x += s.vel.x * dt;
+      s.pos.y += s.vel.y * dt;
+      s.vel.x *= Math.max(0, 1 - 0.9 * dt);                // the push of the exhale dies down, the cloud lingers
+      s.vel.y = Math.max(4, s.vel.y * (1 - 0.5 * dt));
+    }
+    this.smokes = this.smokes.filter((s) => s.age < s.life);
+    for (const b of this.burns) b.age += dt;
+    this.burns = this.burns.filter((b) => b.age < BURN_LIFETIME);
   }
 
   #stepSpits(dt) {
@@ -122,6 +169,8 @@ export class ShatterWorld {
         angle: this.rand(0, 2 * Math.PI),
         spin: this.rand(-18, 18),
         points: this.#shardPolygon(size, i % 5 === 4),
+        seed: this.randInt(0, 99999),
+        hasLabel: i % 6 === 1,                                // a few pieces still carry a bit of the label
         radius: size * 0.45,
         age: 0,
         isResting: false,

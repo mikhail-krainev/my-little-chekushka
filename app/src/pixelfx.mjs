@@ -4,6 +4,7 @@
 import { CELL, RefMap } from './geometry.mjs';
 
 export const BODY_GRID = RefMap.point(0, 0);
+const SEAM_OVERLAP = 0.12;
 
 /** Fills every grid cell inside `bounds` whose centre satisfies `inside`. Runs in one row become one rect. */
 export function fill(ctx, bounds, { cell = CELL, origin = { x: 0, y: 0 }, color }, inside) {
@@ -21,6 +22,33 @@ export function fill(ctx, bounds, { cell = CELL, origin = { x: 0, y: 0 }, color 
         ctx.fillRect(origin.x + runStart * cell, origin.y + iy * cell, (ix - runStart) * cell, cell);
         runStart = null;
       }
+    }
+  }
+}
+
+/**
+ * Like `fill`, but every grid cell picks its own colour: `colorAt(centre, ix, iy)` returns a colour or null.
+ * `ix`, `iy` are the cell indices relative to `origin`, handy as grain coordinates. Equal neighbours merge.
+ */
+export function paint(ctx, bounds, { cell = CELL, origin = { x: 0, y: 0 } }, colorAt) {
+  if (!(bounds.w > 0 && bounds.h > 0 && cell > 0)) return;
+  const x0 = Math.floor((bounds.x - origin.x) / cell), x1 = Math.ceil((bounds.x + bounds.w - origin.x) / cell);
+  const y0 = Math.floor((bounds.y - origin.y) / cell), y1 = Math.ceil((bounds.y + bounds.h - origin.y) / cell);
+  // Opaque runs overlap their neighbours slightly: rects at fractional device pixels would otherwise leave
+  // hairline seams between cells of different colour.
+  const overlap = cell * SEAM_OVERLAP;
+  for (let iy = y0; iy < y1; iy++) {
+    let runStart = null, runCss = null, runOpaque = false;
+    for (let ix = x0; ix <= x1; ix++) {
+      const c = ix < x1 ? colorAt({ x: origin.x + (ix + 0.5) * cell, y: origin.y + (iy + 0.5) * cell }, ix, iy) : null;
+      const css = c ? c.css : null;
+      if (css === runCss) continue;
+      if (runCss !== null) {
+        const pad = runOpaque ? overlap : 0;
+        ctx.fillRect(origin.x + runStart * cell, origin.y + iy * cell, (ix - runStart) * cell + pad, cell + pad);
+      }
+      runStart = ix; runCss = css; runOpaque = c ? c.a >= 0.999 : false;
+      if (css !== null) ctx.fillStyle = css;
     }
   }
 }
@@ -57,7 +85,7 @@ export function bitmap(ctx, rows, topLeft, { scale = 1, cell = CELL, color }) {
   });
 }
 
-function insidePolygon(points, p) {
+export function insidePolygon(points, p) {
   let inside = false;
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
     const a = points[i], b = points[j];

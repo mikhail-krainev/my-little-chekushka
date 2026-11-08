@@ -13,6 +13,8 @@ const ACTIONS = [
   { label: 'Выпить чекушку (0,2 л)', kind: 'vodka' },
   { label: 'Выпить пиво (0,5 л)', kind: 'beer' },
   { label: 'Плюнуть в экран', kind: 'spit' },
+  { label: 'Покурить сигарету', kind: 'smoke' },
+  { label: 'Покурить кальян', kind: 'hookah' },
 ];
 
 let win = null;
@@ -30,7 +32,7 @@ if (!screenshotsDir() && !app.requestSingleInstanceLock()) {
   app.quit();
 }
 
-/** Developer aid: `--demo vodka|beer|sit|sleep|stretch|spit` starts that action right after launch. */
+/** Developer aid: `--demo vodka|beer|sit|sleep|stretch|spit|smoke|hookah` starts that action right after launch. */
 function demoKind() {
   const i = process.argv.indexOf('--demo');
   const kind = i > 0 ? process.argv[i + 1] : null;

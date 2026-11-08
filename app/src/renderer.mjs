@@ -1,6 +1,7 @@
 // Composes the mascot from pixel-art parts cut from the reference picture. Sprite units, origin bottom-left, y up.
 // Every draw function expects a y-up context (see beginYUp).
 import { CELL, MascotRig, Palette, RefMap, Side, rgb, withAlpha } from './geometry.mjs';
+import { dome, grain, tone } from './artstyle.mjs';
 import * as FX from './pixelfx.mjs';
 import * as Props from './props.mjs';
 import { drawVomit } from './vomit.mjs';
@@ -91,8 +92,29 @@ export function handPoint(pose, side) {
   return bodyPoint(pose, MascotRig.solveArm(side, pose.hands[side] ?? MascotRig.restHand[side]).hand);
 }
 
-/** Where the mouth ends up in sprite units (used to launch spit). */
+/** Where the mouth ends up in sprite units (used to launch spit and smoke). */
 export const mouthPoint = (pose) => bodyPoint(pose, MascotRig.mouth);
+
+/** A point given in a held prop's local frame, in body units (before the body transform). */
+function propLocalToBody(pose, prop, local) {
+  const hand = MascotRig.solveArm(prop.side, pose.hands[prop.side] ?? MascotRig.restHand[prop.side]).hand;
+  const [sx, sy] = propScale(prop);
+  const x = local.x * sx, y = local.y * sy, c = Math.cos(prop.angle), s = Math.sin(prop.angle);
+  return { x: hand.x + x * c - y * s, y: hand.y + x * s + y * c };
+}
+
+/** A prop pushed toward the viewer (`depth` 1) looks bigger and foreshortened along its length. */
+const propScale = (prop) => {
+  const d = prop.depth ?? 0;
+  return [prop.scale * (1 + 0.5 * d), prop.scale * (1 + 0.5 * d) * (1 - 0.8 * d)];
+};
+
+/** Burning end of the held cigarette in sprite units, or null (used to place the burn mark). */
+export function emberPoint(pose) {
+  const prop = pose.prop;
+  if (!prop || prop.kind !== 'cigarette') return null;
+  return bodyPoint(pose, propLocalToBody(pose, prop, Props.cigaretteEmber(prop.burnt)));
+}
 
 // MARK: Drawing
 
@@ -101,12 +123,14 @@ export function drawMascot(ctx, pose) {
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   drawShadow(ctx, pose);
+  if (pose.effects.hookah) drawHookahScene(ctx, pose);
   ctx.save();
   applyBodyTransform(ctx, pose);
   for (const side of Side.both) drawLeg(ctx, pose, side);
   drawPart(ctx, sprites.body, RefMap.point(241, 581), 0);
   drawFaceOverlay(ctx, pose.face, pose.isBlinking);
   if (pose.prop) drawProp(ctx, pose, pose.prop);
+  if (pose.prop2) drawProp(ctx, pose, pose.prop2);
   for (const side of Side.both) drawArm(ctx, pose, side);
   drawBodyEffects(ctx, pose);
   ctx.restore();
@@ -143,9 +167,31 @@ function drawProp(ctx, pose, prop) {
   ctx.save();
   ctx.translate(hand.x, hand.y);
   ctx.rotate(prop.angle);
-  ctx.scale(prop.scale, prop.scale);
-  Props.draw(ctx, { kind: prop.kind, angle: prop.angle, fill: prop.fill, capOn: prop.capOn });
+  const [sx, sy] = propScale(prop);
+  ctx.scale(sx, sy);
+  Props.draw(ctx, prop);
   ctx.restore();
+}
+
+/** The hookah is drawn a little larger than its pixel grid so it reads next to the sitting mascot. */
+const HOOKAH_SIZE = 1.2;
+
+/** Hookah on the floor beside the mascot and the hose to the mouthpiece in its hand. Drawn behind the body. */
+function drawHookahScene(ctx, pose) {
+  const h = pose.effects.hookah;
+  const base = { x: MascotRig.centerX + h.side * h.distance, y: 0 };
+  const facing = -h.side;                                     // the hose port faces the mascot
+  ctx.save();
+  FX.ellipse(ctx, { x: base.x, y: 1 }, 15 * h.scale, 3, { color: rgb(0, 0, 0, 0.18) });
+  ctx.translate(base.x, base.y);
+  ctx.scale(h.scale * HOOKAH_SIZE, h.scale * HOOKAH_SIZE);
+  Props.drawHookah(ctx, { side: facing, glow: h.glow, bubbles: h.bubbles, time: h.time });
+  ctx.restore();
+  if (h.scale < 0.9) return;
+  const port = { x: base.x + facing * (Props.HOOKAH_PORT.length + 1.5) * CELL * HOOKAH_SIZE, y: (Props.HOOKAH_PORT.row + 1) * CELL * HOOKAH_SIZE };
+  const pipe = pose.prop?.kind === 'mouthpiece' && pose.prop.scale > 0.5 ? pose.prop : null;
+  const end = pipe ? bodyPoint(pose, propLocalToBody(pose, pipe, Props.MOUTHPIECE_HOSE_JOINT)) : { x: port.x + facing * 14, y: 3 };
+  Props.drawHose(ctx, port, end);
 }
 
 // MARK: Effects
@@ -153,27 +199,36 @@ function drawProp(ctx, pose, prop) {
 const SPARKLE = ['..X..', '.XXX.', 'XXXXX', '.XXX.', '..X..'];
 const TEARDROP = ['.X.', '.X.', 'XXX', 'XXX', '.X.'];
 const LETTER_Z = ['XXXXX', '....X', '...X.', '.X...', 'XXXXX'];
+const SMOKE_GREY = rgb(0.80, 0.81, 0.83);
+const STAR = rgb(0.92, 0.78, 0.36);
+const SWEAT = rgb(0.62, 0.76, 0.86);
+const SLEEP_BLUE = rgb(0.32, 0.40, 0.62);
 
 function drawBodyEffects(ctx, pose) {
   const e = pose.effects, mouth = MascotRig.mouth;
-  if (e.puff > 0) {                                           // exhaled smoke
+  if (e.puff > 0) {                                           // exhaled breath: small shaded cloud puffs
     const k = e.puff;
     for (let i = 0; i < 4; i++) {
       const c = { x: mouth.x + e.puffSide * (9 + 20 * k + i * 6 * k), y: mouth.y + 2 + 12 * k + i * 3 * k };
       const r = 2.5 + 5 * k + i * 0.8;
-      FX.disc(ctx, c, r, { color: rgb(0.74, 0.77, 0.83, 0.75 * (1 - k)) });
-      FX.disc(ctx, c, Math.max(0, r - CELL * 1.2), { color: rgb(1, 1, 1, 0.8 * (1 - k)) });
+      FX.paint(ctx, { x: c.x - r, y: c.y - r, w: 2 * r, h: 2 * r }, {}, (p, ix, iy) => {
+        const dx = (p.x - c.x) / r, dy = (p.y - c.y) / r;
+        if (dx * dx + dy * dy > 1) return null;
+        return tone(SMOKE_GREY, dome(dx, dy) * 1.15, grain(ix, iy, i) * 0.05, 0.8 * (1 - k));
+      });
     }
   }
   if (e.dizzy > 0.02) {
     for (let i = 0; i < 3; i++) {
       const a = pose.time * 4 + i * 2.09;
       const c = { x: MascotRig.headTop.x + Math.cos(a) * 20, y: MascotRig.headTop.y + 6 + Math.sin(a) * 5 };
-      FX.bitmap(ctx, SPARKLE, { x: c.x - 3, y: c.y + 3 }, { color: rgb(1, 0.85, 0.2, e.dizzy) });
+      FX.bitmap(ctx, SPARKLE, { x: c.x - 3, y: c.y + 3 }, { color: tone(STAR, 1, 0, e.dizzy) });
+      FX.block(ctx, { x: c.x, y: c.y }, { color: tone(STAR, 1.25, 0, e.dizzy) });
     }
   }
   if (e.sweat > 0.02) {
-    FX.bitmap(ctx, TEARDROP, { x: 85, y: 142 - 6 * e.sweat }, { color: rgb(0.55, 0.8, 1, 0.9 * (1 - e.sweat * 0.4)) });
+    FX.bitmap(ctx, TEARDROP, { x: 85, y: 142 - 6 * e.sweat }, { color: tone(SWEAT, 1, 0, 0.9 * (1 - e.sweat * 0.4)) });
+    FX.block(ctx, { x: 86.5, y: 138.5 - 6 * e.sweat }, { color: tone(SWEAT, 1.3, 0, 0.9 * (1 - e.sweat * 0.4)) });
   }
   if (e.capFlight > 0 && e.capFlight < 1) {
     const k = e.capFlight;
@@ -186,6 +241,7 @@ function drawBodyEffects(ctx, pose) {
 
 /** Effects that stay upright whatever the body does. */
 function drawWorldEffects(ctx, pose) {
+  if (pose.effects.emberSmoke > 0.02) drawEmberSmoke(ctx, pose);
   if (pose.effects.vomit) {
     drawVomit(ctx, pose.effects.vomit, { mouth: bodyPoint(pose, MascotRig.mouth), puddleX: MascotRig.centerX + pose.shift.x });
   }
@@ -194,7 +250,19 @@ function drawWorldEffects(ctx, pose) {
   for (let i = 0; i < 3; i++) {
     const phase = (pose.time * 0.55 + i / 3) % 1;
     const origin = { x: head.x + 8 + phase * 22 + Math.sin(phase * 9) * 3, y: head.y + 4 + phase * 34 };
-    FX.bitmap(ctx, LETTER_Z, origin, { scale: phase < 0.45 ? 1 : 2, color: rgb(0.25, 0.4, 0.85, 1 - phase) });
+    FX.bitmap(ctx, LETTER_Z, origin, { scale: phase < 0.45 ? 1 : 2, color: tone(SLEEP_BLUE, 1, 0, 1 - phase) });
+  }
+}
+
+/** A thin ribbon of smoke curling up from the cigarette end. */
+function drawEmberSmoke(ctx, pose) {
+  const ember = emberPoint(pose);
+  if (!ember) return;
+  const k = pose.effects.emberSmoke, t = pose.time;
+  for (let i = 0; i < 16; i++) {
+    const age = (t * 0.7 + i / 16) % 1;
+    const p = { x: ember.x + Math.sin(age * 9 + t * 2) * 3 * age + age * 4, y: ember.y + 2 + age * 34 };
+    FX.block(ctx, p, { cells: age > 0.4 ? 2 : 1, color: tone(SMOKE_GREY, 1.05, 0, 0.75 * k * (1 - age * 0.8)) });
   }
 }
 
