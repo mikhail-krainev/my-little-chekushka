@@ -14,11 +14,11 @@
 
 <br>
 
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.0/Chekushka-1.1.0-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
 
-<sub>Версия 1.1.0 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
+<sub>Версия 1.1.1 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
 
 <br><br>
 
@@ -110,7 +110,7 @@ npm run dist:mac    # .pkg для macOS (arm64 и x64)
 npm run dist:win    # установщик .exe для Windows
 ```
 
-Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.1.0 && git push origin v1.1.0`.
+Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.1.1 && git push origin v1.1.1`.
 
 ## 🧩 Устройство
 

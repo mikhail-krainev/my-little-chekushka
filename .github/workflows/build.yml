@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # one macOS runner packs both arm64 and x64 .pkg (arch list in package.json)
+          # one macOS runner packs arm64, then x64 .pkg (in turn: parallel pkg builds share dist/distribution.xml)
           - { os: macos-latest, script: dist:mac, name: macos }
           - { os: windows-latest, script: dist:win, name: windows }
     runs-on: ${{ matrix.os }}
