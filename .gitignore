@@ -1,0 +1,22 @@
+# build output
+.build/
+.swiftpm/
+*.xcodeproj
+app/node_modules/
+app/dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# secrets and local config: never commit
+.env
+.env.*
+*.pem
+*.p12
+*.key
+*.keystore
+
+# archived Gemini chat code (not part of the app)
+macos-native/Archive/chat-agent/
