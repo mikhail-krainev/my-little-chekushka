@@ -27,10 +27,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS: one runner per CPU, each packs the Electron it has installed (no extra download that can 504)
-          - { os: macos-latest, script: dist:mac, name: macos-arm64, args: '--arm64 -c.electronDist=node_modules/electron/dist -c.electronVersion=45.2.3' }
-          - { os: macos-15-intel, script: dist:mac, name: macos-x64, args: '--x64 -c.electronDist=node_modules/electron/dist -c.electronVersion=45.2.3' }
-          - { os: windows-latest, script: dist:win, name: windows, args: '' }
+          # one macOS runner packs both arm64 and x64 .pkg (arch list in package.json)
+          - { os: macos-latest, script: dist:mac, name: macos }
+          - { os: windows-latest, script: dist:win, name: windows }
     runs-on: ${{ matrix.os }}
     defaults: { run: { working-directory: app } }
     steps:
@@ -38,12 +37,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
       - run: npm ci
-      # GitHub release downloads (Electron binaries) sometimes answer 504: retry a few times
+      # GitHub release downloads (Electron, NSIS) sometimes answer 504 for a long time.
+      # First attempts go to GitHub; later ones use the npmmirror.com copy.
       - name: Package
         shell: bash
         run: |
           for attempt in 1 2 3 4 5; do
-            npm run ${{ matrix.script }} -- --publish never ${{ matrix.args }} && exit 0
+            if [ "$attempt" -ge 3 ]; then
+              export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+              export ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+              echo "using npmmirror.com"
+            fi
+            npm run ${{ matrix.script }} -- --publish never && exit 0
             echo "attempt $attempt failed, retrying"; sleep 20
           done
           exit 1

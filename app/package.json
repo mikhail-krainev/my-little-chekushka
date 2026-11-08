@@ -1,7 +1,7 @@
 {
   "name": "chekushka",
   "productName": "Чекушка",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Desktop pet «Чекушка Мировая №67» for macOS and Windows",
   "main": "main.js",
   "author": "mikhail-krainev",
