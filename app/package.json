@@ -1,7 +1,7 @@
 {
   "name": "chekushka",
   "productName": "Чекушка",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Desktop pet «Чекушка Мировая №67» for macOS and Windows",
   "main": "main.js",
   "author": "mikhail-krainev",
@@ -10,6 +10,7 @@
     "start": "electron .",
     "test": "node --test \"test/*.test.mjs\"",
     "screenshots": "electron . --screenshots ../docs/screenshots",
+    "predist:mac": "npm install --no-save --force --no-audit --no-fund @koromix/koffi-darwin-arm64@3.3.4 @koromix/koffi-darwin-x64@3.3.4",
     "dist:mac": "electron-builder --mac --arm64 --publish never && electron-builder --mac --x64 --publish never",
     "dist:win": "electron-builder --win",
     "dist": "electron-builder"
@@ -29,6 +30,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "stationary.js",
       "watcher.js",
       "screenshots.js",
       "src/**/*",
@@ -68,5 +70,8 @@
       "installLocation": "/Applications",
       "isRelocatable": false
     }
+  },
+  "dependencies": {
+    "koffi": "3.3.4"
   }
 }

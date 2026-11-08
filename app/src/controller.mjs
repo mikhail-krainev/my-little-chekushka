@@ -12,6 +12,12 @@ const SIZE = Config.mascotSize;
 const EXCITING = new Set(['excited', 'surprised']);
 /** Seconds over which one action eases into the next instead of snapping. */
 const BLEND_TIME = 0.22;
+/** A throw at least this fast (px/s) counts as being thrown, not just put down. */
+const THROWN_SPEED = 1100;
+/** Hitting a screen edge at least this fast (px/s) is worth a word. */
+const WALL_HIT_SPEED = 700;
+/** Floor actions announced as they start; smoking ones speak after the first drag instead (see #fireCues). */
+const SPOKEN_AT_START = new Set(['sit', 'sleep', 'stretch']);
 /** Actions done facing the working side. */
 const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah']);
 
@@ -21,10 +27,14 @@ export class MascotController {
    * @param env.getCursor () => {x, y}                               global cursor, y up
    * @param env.overlay   { throwBottle(kind, origin, velocity), spit(origin, target), smoke(origin, opts), burn(at) }
    * @param env.clock     () => seconds
+   * `onEvent(name, { requested })` (optional) hears what happens to the mascot: pickedUp, thrown, hitWall, grabbedCursor,
+   * wokenUp, and from floor actions sit, sleep, stretch, smoke, hookah, spit, drunk, vomit; `requested` is true when the
+   * user chose that action from the menu.
    */
   constructor(env) {
     this.env = env;
     this.onClick = null;
+    this.onEvent = null;
     this.state = { type: 'idle', until: 0 };
     this.pos = { x: 0, y: 0 };
     this.vel = { x: 0, y: 0 };
@@ -65,10 +75,11 @@ export class MascotController {
     if (this.state.type === 'idle' && EXCITING.has(event.emote)) this.#hop(this.#bounds, 0.4);
   }
 
-  /** Starts a floor action now (menu / debugging); walks down to the floor first if needed. */
+  /** Starts a floor action the user asked for (menu / debugging); hops down to the floor first if needed. While he is
+   *  held, hanging or flying it waits and starts once he lands. Its phrase is marked as requested (see onEvent). */
   trigger(kind) {
-    if (!this.canBeInterrupted) return;
-    this.#schedule(Animator.makePerformance(kind, { side: this.dir }));
+    const perf = { ...Animator.makePerformance(kind, { side: this.dir }), requested: true };
+    if (this.canBeInterrupted) this.#schedule(perf); else this.pendingPerformance = perf;
   }
 
   wakeAndStare() {
@@ -78,7 +89,9 @@ export class MascotController {
   // MARK: Mouse (called by the app)
 
   hoverChanged(inside) {
-    if (inside && this.isSleeping) this.wakeAndStare();
+    if (!inside || !this.isSleeping) return;
+    this.wakeAndStare();
+    this.onEvent?.('wokenUp');
   }
 
   clicked() {
@@ -90,6 +103,7 @@ export class MascotController {
     this.grab = { x: cursor.x - this.pos.x, y: cursor.y - this.pos.y };
     this.pendingPerformance = null;
     this.state = { type: 'dragged' };
+    this.onEvent?.('pickedUp');
   }
 
   dragMoved(cursor) {
@@ -100,6 +114,7 @@ export class MascotController {
     const cap = Config.throwVelocityCap;
     this.vel = { x: clamp(v.x, -cap, cap), y: clamp(v.y, -cap, cap) };
     this.state = { type: 'air' };
+    if (Math.hypot(this.vel.x, this.vel.y) >= THROWN_SPEED) this.onEvent?.('thrown');
   }
 
   // MARK: Simulation
@@ -199,10 +214,13 @@ export class MascotController {
     this.vel.y -= Config.gravity * dt;
     this.pos.x += this.vel.x * dt;
     this.pos.y += this.vel.y * dt;
-    if (this.pos.x < b.minX) { this.pos.x = b.minX; this.vel.x = Math.abs(this.vel.x) * 0.5; }
-    if (this.pos.x > maxX) { this.pos.x = maxX; this.vel.x = -Math.abs(this.vel.x) * 0.5; }
+    const impact = Math.hypot(this.vel.x, this.vel.y);
+    let hitWall = false;
+    if (this.pos.x < b.minX) { this.pos.x = b.minX; this.vel.x = Math.abs(this.vel.x) * 0.5; hitWall = true; }
+    if (this.pos.x > maxX) { this.pos.x = maxX; this.vel.x = -Math.abs(this.vel.x) * 0.5; hitWall = true; }
     const ceiling = b.maxY - SIZE.height;
-    if (this.pos.y > ceiling) { this.pos.y = ceiling; this.vel.y = -Math.abs(this.vel.y) * 0.4; }
+    if (this.pos.y > ceiling) { this.pos.y = ceiling; this.vel.y = -Math.abs(this.vel.y) * 0.4; hitWall = true; }
+    if (hitWall && impact >= WALL_HIT_SPEED) this.onEvent?.('hitWall');
     if (!(this.pos.y <= ground && this.vel.y < 0)) return;
     this.pos.y = ground;
     if (Math.abs(this.vel.y) > 350) { this.vel.y = -this.vel.y * 0.4; this.vel.x *= 0.7; return; }
@@ -269,6 +287,7 @@ export class MascotController {
     if (p.kind === 'hookah') this.#roomForHookah(p);
     if (SIDED.has(p.kind)) this.facingRight = p.side > 0;
     this.state = { type: 'perform', perf: p, start: this.now };
+    if (SPOKEN_AT_START.has(p.kind)) this.#announce(p, p.kind);
   }
 
   /** The hookah stands beside the mascot: put it on the side with room on the screen. */
@@ -311,8 +330,10 @@ export class MascotController {
       const pose = Animator.performance(perf, cue.at, base);
       switch (cue.type) {
         case 'throw': this.#throwBottle(perf, pose); break;
-        case 'spit': this.#spit(pose); break;
+        case 'spit': this.#spit(pose); this.#announce(perf, 'spit'); break;
+        case 'vomit': case 'drunk': this.#announce(perf, cue.type); break;
         case 'exhale':
+          if (this.cueIndex - 1 === list.findIndex((c) => c.type === 'exhale')) this.#announce(perf, perf.kind);   // first puff
           this.env.overlay.smoke(this.#spriteToScreen(mouthPoint(pose)), { size: cue.size, life: cue.life, drift: perf.side * (cue.drift ?? 1) });
           break;
         case 'burn': {
@@ -323,6 +344,11 @@ export class MascotController {
         default: throw new Error(`unknown cue: ${cue.type}`);
       }
     }
+  }
+
+  /** Tells the app a floor action reached the moment for its phrase. */
+  #announce(perf, name) {
+    this.onEvent?.(name, { requested: perf.requested === true });
   }
 
   #spriteToScreen(p) {
@@ -368,6 +394,7 @@ export class MascotController {
     this.swingAngle = 0; this.swingVelocity = 0;
     this.prevCursor = { ...this.env.getCursor() }; this.prevCursorVx = 0;
     this.state = { type: 'hanging', until: this.now + Config.hangDuration };
+    this.onEvent?.('grabbedCursor');
   }
 
   /** The mascot follows the cursor like a pendulum. The cursor itself is never touched. */

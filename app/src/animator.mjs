@@ -271,11 +271,16 @@ export function drinkTimeline(kind, vomits = false) {
 /**
  * Moments when a scene affects the screen around the mascot, in time order:
  * `throw` (empty bottle leaves the hand), `spit`, `exhale` (a smoke cloud leaves the mouth; `drift` is relative to the
- * scene side), `burn` (cigarette pressed out).
+ * scene side), `burn` (cigarette pressed out), `vomit` / `drunk` (after drinking: gets sick / keeps it down; only a
+ * moment for the mascot to say something, nothing leaves it).
  */
 export function cues(perf) {
   switch (perf.kind) {
-    case 'vodka': case 'beer': return [{ at: drinkTimeline(perf.kind, perf.vomits).release, type: 'throw' }];
+    case 'vodka': case 'beer': {
+      const tl = drinkTimeline(perf.kind, perf.vomits);
+      const after = perf.vomits ? { at: tl.swayEnd, type: 'vomit' } : { at: tl.grimaceEnd, type: 'drunk' };
+      return [after, { at: tl.release, type: 'throw' }];
+    }
     case 'spit': return [{ at: SPIT_RELEASE, type: 'spit' }];
     case 'smoke': return [
       ...Array.from({ length: SMOKE.puffs }, (_, i) => ({ at: SMOKE.firstPuff + i * SMOKE.cycle + SMOKE.exhaleAt, type: 'exhale', size: 0.55, life: SMOKE.cloudLife, drift: -1 })),

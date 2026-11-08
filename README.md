@@ -14,11 +14,11 @@
 
 <br>
 
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
-<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.1.1/Chekushka-1.1.1-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.2.0/Chekushka-1.2.0-win-x64.exe"><img alt="Скачать для Windows" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-Windows%20x64-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDBoMTEuNHYxMS40SDB6TTEyLjYgMEgyNHYxMS40SDEyLjZ6TTAgMTIuNmgxMS40VjI0SDB6TTEyLjYgMTIuNkgyNFYyNEgxMi42eiIvPjwvc3ZnPg%3D%3D"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.2.0/Chekushka-1.2.0-mac-arm64.pkg"><img alt="Скачать для macOS Apple Silicon" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Apple%20Silicon-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
+<a href="https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.2.0/Chekushka-1.2.0-mac-x64.pkg"><img alt="Скачать для macOS Intel" src="https://img.shields.io/badge/%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C-macOS%20Intel-555555?style=for-the-badge&logo=apple&logoColor=white"></a>
 
-<sub>Версия 1.1.1 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
+<sub>Версия 1.2.0 · <a href="https://github.com/mikhail-krainev/my-little-chekushka/releases">все версии</a></sub>
 
 <br><br>
 
@@ -59,8 +59,41 @@
 ## ✨ Что умеет
 
 - Ходит, бегает, приседает и прыгает, прыгает к курсору и повисает на нём (быстро дёрните мышь, чтобы стряхнуть).
+- Живёт поверх всех окон и на рабочем столе: на macOS не уезжает вместе с окнами, когда вы кликаете по обоям или показываете рабочий стол.
 - Его можно схватить мышью и бросить: он летит по физике и приземляется.
-- Клик по нему — реплика в облачке.
+- Говорит 36 мемных фраз Меллстроя его голосом: вместо лица в бутылке играет пиксельное видео, как он её произносит, а текст появляется в облачке. Клик по нему (или «Сказать фразу» в меню) — случайная фраза, остальные звучат в ответ на то, что вы делаете:
+
+  | Что происходит | Фраза |
+  |---|---|
+  | создали папку | «Пошла валютная возня» |
+  | что-то скачалось в «Загрузки» | «Бабки рулятся, движуха мутится» |
+  | сделали скриншот | «Ха-ха-ха! Это пизда! И ведь нормалды!» |
+  | появился новый файл | «Нихуя себе. И вправду потужненько» |
+  | удалили файл | «Бабок, сука, больше нет. Блядь» |
+  | удалили 5 файлов за 10 секунд | «Суд! Милиция! Помогите!» |
+  | открыли браузер | «Только ставки: футбол, хуйбол…» |
+  | открыли мессенджер (Telegram, WhatsApp, Discord…) | «О да, у да, детка…» |
+  | открыли редактор кода или терминал | «Я не знаю, как это комментировать, блядь» |
+  | открыли другое приложение | «Быстрее!» |
+  | закрыли приложение | «Да похуй, ну и ладно» |
+  | вернулись к компьютеру (мышь стояла 3 минуты) | «Живой» |
+  | схватили его мышью | «НО!» |
+  | швырнули | «Да иди ты нахуй… пёс моя паршивая» |
+  | ударился о край экрана | «Не говори таких слов при мне, блядь» |
+  | запрыгнул на курсор | «Танцуем все! О да!» |
+  | разбудили, наведя мышь | «Молчать, блядь» |
+  | плюнул в экран | «Да пошла ты нахуй, блядь, корова ебаная!» |
+  | выпил и не стошнило | одна из: «Баба, блядь», «О, баба! Баба дырка!», «Что это за хуйня? Фу, блядь», «Это просто полная пизда…» |
+  | выпил и стошнило | «Да ну нахуй, да это пиздец!» |
+  | кликают по нему 4 раза подряд | «Блин, ты чё, еблан?» |
+  | садится на пол | «Сядь, дура толстая!» |
+  | ложится спать | «Ох, баёшечки, баёшечки…» |
+  | делает зарядку | «День шестой… будем идти вперёд» |
+  | затянулся сигаретой | «Блядь, это жёстко!» |
+  | затянулся кальяном | «…Мне как-то поебать вообще» |
+  | запустили приложение | «Привет, дорогие зрители и подписчики…» |
+
+  Иногда, раз в 4–9 минут тишины, он просто что-нибудь говорит сам («Кто такой Палыч?», «Мы не умрём в туалете», «Каждый день хочется разбить монитор»…), но не во сне и не поверх другой фразы. Одна фраза не перебивает другую, реакции на файлы и приложения звучат не чаще раза в 8 секунд, а на занятия, которые он выбрал сам, — раза в 25 секунд. Действие, выбранное в меню, всегда сопровождается своей фразой. Список настраивается в `app/src/triggers.mjs`.
 - Занятия на «полу» (случайно или из меню):
   - сесть и зевнуть, спать лёжа на боку;
   - зарядка: круги руками, наклоны, приседания, прыжки;
@@ -78,6 +111,13 @@
 | ![Выпивка](docs/screenshots/drinks.png) | ![Плевок](docs/screenshots/spit.png) |
 | **Сигарета** | **Кальян** |
 | ![Сигарета](docs/screenshots/smoke.png) | ![Кальян](docs/screenshots/hookah.png) |
+
+<details>
+<summary>Фразы: лицо из видео в бутылке</summary>
+
+![Фразы](docs/screenshots/phrases.png)
+
+</details>
 
 <details>
 <summary>Разбитое стекло</summary>
@@ -98,7 +138,7 @@
 cd app
 npm install
 npm start                    # запуск
-npm start -- --demo smoke    # сразу начать действие: vodka | beer | sit | sleep | stretch | spit | smoke | hookah
+npm start -- --demo smoke    # сразу начать действие: vodka | beer | sit | sleep | stretch | spit | smoke | hookah | say
 npm test                     # тесты анимации, стекла, дыма и ожогов
 npm run screenshots          # перерисовать картинки для README в docs/screenshots
 ```
@@ -110,13 +150,14 @@ npm run dist:mac    # .pkg для macOS (arm64 и x64)
 npm run dist:win    # установщик .exe для Windows
 ```
 
-Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.1.1 && git push origin v1.1.1`.
+Тот же результат даёт GitHub Actions ([.github/workflows/build.yml](.github/workflows/build.yml)): на каждый тег `v*` собираются обе системы и файлы прикладываются к релизу. Новый релиз: `git tag v1.2.0 && git push origin v1.2.0`.
 
 ## 🧩 Устройство
 
 ```
 app/                  кроссплатформенное приложение (Electron), его собирают для macOS и Windows
   main.js             окно-прозрачный слой на весь экран, трей, слежение за экраном
+  stationary.js       macOS: окно не уезжает при показе рабочего стола (через koffi)
   watcher.js          файлы (fs.watch) и запущенные приложения
   src/                логика и отрисовка
     animator.mjs      чистые функции: время → поза
@@ -126,10 +167,17 @@ app/                  кроссплатформенное приложение 
     renderer.mjs      сборка маскота из спрайтов, лицо, эффекты
     props.mjs         бутылки, сигарета, зажигалка, кальян
     shatter.mjs       физика стекла, плевков, дыма и ожогов
+    talk.mjs          мемные фразы: звук и кадры лица
+    triggers.mjs      какая фраза на какое действие
+    phrase-clips.mjs  список фраз (генерируется tools/make_phrases.py)
   assets/sprites/     детали маскота (тело, руки, ноги)
+  assets/phrases/     фразы: <key>.ogg (звук) и <key>.png (кадры лица)
   test/               тесты (node --test)
 macos-native/         первоначальная нативная версия на Swift/AppKit (только macOS)
 tools/make_sprites.py нарезка спрайтов из исходной картинки
+tools/make_phrases.py фразы из видео на зелёном фоне: вырезает фразу один раз, звук,
+                      трекинг лица, ключ, цвет под маскота, пикселизация
+                      (python3 -I tools/make_phrases.py <папка с видео> app)
 docs/screenshots/     картинки для README
 ```
 

@@ -1,6 +1,7 @@
 'use strict';
 // Watches files in Desktop / Documents / Downloads and the apps that are running.
-// Calls `onEvent({ type, name })` with type fileCreated | fileDeleted | appLaunched | appQuit.
+// Calls `onEvent({ type, name, folder?, isDirectory? })` with type fileCreated | fileDeleted | appLaunched | appQuit;
+// file events also say which watched folder (Desktop, Documents, Downloads) they happened in.
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -39,7 +40,7 @@ class SystemWatcher {
       if (!fs.existsSync(folder)) continue;
       try {
         // Recursive watching is native on macOS and Windows, which are the platforms we ship.
-        const watcher = fs.watch(folder, { recursive: true }, (_type, file) => file && this.#onFsChange(path.join(folder, file)));
+        const watcher = fs.watch(folder, { recursive: true }, (_type, file) => file && this.#onFsChange(path.join(folder, file), name));
         watcher.on('error', (err) => console.error(`watch ${folder} failed:`, err.message));
         this.watchers.push(watcher);
       } catch (err) {
@@ -48,12 +49,14 @@ class SystemWatcher {
     }
   }
 
-  #onFsChange(fullPath) {
+  #onFsChange(fullPath, folder) {
     const name = path.basename(fullPath);
     if (name.startsWith('.') || name.startsWith('~$') || IGNORED_SUFFIXES.some((s) => name.endsWith(s))) return;
     if (this.#isDuplicate(fullPath, FILE_DEBOUNCE_MS)) return;
     // fs.watch only says "something changed": existence tells created from deleted.
-    fs.access(fullPath, (err) => this.onEvent({ type: err ? 'fileDeleted' : 'fileCreated', name }));
+    fs.stat(fullPath, (err, stats) => this.onEvent(err
+      ? { type: 'fileDeleted', name, folder }
+      : { type: 'fileCreated', name, folder, isDirectory: stats.isDirectory() }));
   }
 
   #isDuplicate(key, windowMs) {

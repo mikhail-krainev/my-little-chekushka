@@ -1,5 +1,5 @@
 // Developer / documentation tool: renders pose sheets and broken-glass strips to a canvas (used for the README screenshots).
-// `sheet.html?set=poses|drinks|spit|smoke|hookah|glass` draws one sheet and sets `window.__sheetSize` when it is done.
+// `sheet.html?set=poses|drinks|spit|smoke|hookah|phrases|glass` draws one sheet and sets `window.__sheetSize` when it is done.
 import * as A from './animator.mjs';
 import { Config, rgb } from './geometry.mjs';
 import { newFace } from './pose.mjs';
@@ -7,6 +7,7 @@ import { beginYUp, drawMascot, emberPoint, loadSprites, mouthPoint } from './ren
 import { HOOKAH, SMOKE } from './smoking.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
+import { PhrasePlayer, faceFrame } from './talk.mjs';
 
 const BACKGROUND = '#cdd1db';
 const DPR = 2;
@@ -35,6 +36,15 @@ function worldAt(p, t) {
 }
 
 const scene = (p, label, t) => [label, A.performance(p, t, base), worldAt(p, t)];
+
+/** One frame of every meme clip, a little before the middle of the phrase. */
+async function phraseScenes() {
+  const clips = await new PhrasePlayer(() => 0, '../assets/phrases').load();
+  return clips.map((clip) => {
+    const index = Math.floor(clip.frames * 0.4);
+    return [clip.key, A.idle(0, base), null, faceFrame(clip, index)];
+  });
+}
 
 function poses(set) {
   switch (set) {
@@ -120,14 +130,14 @@ function drawPoseSheet(canvas, entries, columns, left = 70) {
   const w = CELL.width * columns, h = CELL.height * rows;
   const ctx = setCanvas(canvas, w, h);
   fillBackground(ctx, w, h);
-  entries.forEach(([label, pose, world], i) => {
+  entries.forEach(([label, pose, world, face], i) => {
     const col = i % columns, row = Math.floor(i / columns);
     const ox = col * CELL.width, oyUp = h - (row + 1) * CELL.height;
     ctx.save();
     beginYUp(ctx, h, DPR);
     ctx.translate(ox + left, oyUp + 22);
     ctx.scale(SCALE, SCALE);
-    drawMascot(ctx, pose);
+    drawMascot(ctx, pose, face);
     ctx.restore();
     if (world) {
       ctx.save();
@@ -190,7 +200,9 @@ async function main() {
   await loadSprites('../assets/sprites');
   const set = new URLSearchParams(location.search).get('set') || 'poses';
   const canvas = document.getElementById('sheet');
-  window.__sheetSize = set === 'glass' ? drawGlassSheet(canvas) : drawPoseSheet(canvas, poses(set), 4, set === 'smoke' ? 45 : 70);
+  if (set === 'glass') { window.__sheetSize = drawGlassSheet(canvas); return; }
+  const entries = set === 'phrases' ? await phraseScenes() : poses(set);
+  window.__sheetSize = drawPoseSheet(canvas, entries, 4, set === 'smoke' ? 45 : 70);
 }
 
 main().catch((err) => { window.__sheetError = String(err?.stack ?? err); });

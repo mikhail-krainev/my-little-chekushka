@@ -1,6 +1,7 @@
 'use strict';
 const path = require('node:path');
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
+const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
 
 const CURSOR_POLL_MS = 16;
@@ -15,6 +16,7 @@ const ACTIONS = [
   { label: 'Плюнуть в экран', kind: 'spit' },
   { label: 'Покурить сигарету', kind: 'smoke' },
   { label: 'Покурить кальян', kind: 'hookah' },
+  { label: 'Сказать фразу', kind: 'say' },
 ];
 
 let win = null;
@@ -28,11 +30,14 @@ function screenshotsDir() {
   return i > 0 ? path.resolve(process.argv[i + 1] ?? 'screenshots') : null;
 }
 
+// Phrases are also started from the tray menu, where there is no click in the page to unlock audio.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 if (!screenshotsDir() && !app.requestSingleInstanceLock()) {
   app.quit();
 }
 
-/** Developer aid: `--demo vodka|beer|sit|sleep|stretch|spit|smoke|hookah` starts that action right after launch. */
+/** Developer aid: `--demo vodka|beer|sit|sleep|stretch|spit|smoke|hookah|say` starts that action right after launch. */
 function demoKind() {
   const i = process.argv.indexOf('--demo');
   const kind = i > 0 ? process.argv[i + 1] : null;
@@ -60,6 +65,7 @@ function createWindow(display) {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  makeStationary(win);                       // after the two calls above, which add their own flags
   win.setIgnoreMouseEvents(true);
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   win.once('ready-to-show', () => win.showInactive());

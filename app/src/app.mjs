@@ -4,12 +4,25 @@ import { Bubble } from './bubble.mjs';
 import { MascotController } from './controller.mjs';
 import { describeEvent } from './events.mjs';
 import { Config } from './geometry.mjs';
-import { CLICK_PHRASE } from './phrases.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { ShatterWorld } from './shatter.mjs';
+import { PhrasePlayer, ShuffleBag } from './talk.mjs';
+import { BurstCounter, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent } from './triggers.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
 
 const MAX_FRAME_STEP = 1 / 30;
+/** The caption stays up a little after the clip ends. */
+const PHRASE_BUBBLE_TAIL = 0.6;
+/** This many deletions within the window count as a clean-out. */
+const MASS_DELETE = { count: 5, window: 10 };
+/** This many clicks within the window count as pestering. */
+const CLICK_SPAM = { count: 4, window: 2.5 };
+/** The user counts as away after the cursor stands still this long. */
+const AWAY_SECONDS = 180;
+/** Idle chatter comes this many seconds after the last phrase, at a random moment in the range. */
+const CHATTER_GAP = { min: 240, max: 540 };
+/** The greeting waits for the mascot to appear. */
+const GREETING_DELAY_MS = 2000;
 const DIRTY_MARGIN = 48;
 
 const api = window.mellstroy;
@@ -31,6 +44,14 @@ let smokeWasActive = false;
 let dirty = [];                    // rects (y down) painted on the mascot layer last frame
 
 const bubble = new Bubble(clock);
+const phrases = new PhrasePlayer(clock, '../assets/phrases');
+let phraseBag = new ShuffleBag([]);
+const triggerGate = new TriggerGate();
+const chatter = new ChatterClock(CHATTER_GAP.min, CHATTER_GAP.max);
+let triggerBags = {};               // trigger → ShuffleBag of its loaded clips
+const deletions = new BurstCounter(MASS_DELETE.count, MASS_DELETE.window);
+const clicks = new BurstCounter(CLICK_SPAM.count, CLICK_SPAM.window);
+const userReturn = new ReturnWatch(AWAY_SECONDS);
 
 const mouse = { down: false, dragging: false, start: { x: 0, y: 0 }, samples: [], inside: false };
 
@@ -56,9 +77,47 @@ function showBubble(text, duration) {
   bubble.show(mainCtx, text, () => controller.frame, duration);
 }
 
-function onSystemEvent({ type, name }) {
-  const event = describeEvent(type, name);
-  controller.react(event);                       // the mascot only reacts with a hop, it never comments
+/** Plays a clip (voice + talking face) with its text in the bubble, cutting off whatever was being said. */
+function say(clip) {
+  if (!clip) return;
+  phrases.play(clip);
+  showBubble(clip.text, clip.duration + PHRASE_BUBBLE_TAIL);
+  chatter.heard(clock() + clip.duration);
+}
+
+/** Click or the tray menu: a random phrase, never the same twice in a row. */
+const sayRandom = () => say(phraseBag.next());
+
+/** A phrase that belongs to `trigger`, unless the mascot is talking or its group spoke just now. An action the user
+ *  chose from the menu (`requested`) always speaks, cutting off whatever was being said. */
+function sayFor(trigger, { requested = false } = {}) {
+  const bag = triggerBags[trigger];
+  if (!bag) return;
+  if (requested) { triggerGate.force(trigger, clock()); say(bag.next()); return; }
+  if (triggerGate.allow(trigger, clock(), phrases.isTalking)) say(bag.next());
+}
+
+function onClick() {
+  if (clicks.hit(clock())) say(triggerBags.clickSpam?.next()); else sayRandom();
+}
+
+/** Something to fill a long silence, never in the middle of a phrase or in his sleep. */
+function chatterIfDue() {
+  if (chatter.isDue(clock(), !phrases.isTalking && !controller.isSleeping)) sayFor('chatter');
+}
+
+function bagsByTrigger(clips) {
+  const byKey = new Map(clips.map((c) => [c.key, c]));
+  return Object.fromEntries(Object.entries(TRIGGER_PHRASES).map(([trigger, keys]) => (
+    [trigger, new ShuffleBag(keys.map((k) => byKey.get(k)).filter(Boolean))]
+  )).filter(([, bag]) => bag.items.length > 0));
+}
+
+function onSystemEvent(payload) {
+  controller.react(describeEvent(payload.type, payload.name));
+  const trigger = classifySystemEvent(payload);
+  if (!trigger) return;
+  sayFor(trigger === 'fileDeleted' && deletions.hit(clock()) ? 'massDelete' : trigger);
 }
 
 const inside = (r, p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
@@ -113,7 +172,7 @@ function drawMascotLayer() {
   beginYUp(mainCtx, height, dpr);
   mainCtx.translate(controller.pos.x + Config.spritePad, controller.pos.y + Config.spritePad);
   mainCtx.scale(Config.spriteScale, Config.spriteScale);
-  drawMascot(mainCtx, controller.pose);
+  drawMascot(mainCtx, controller.pose, phrases.face());
   mainCtx.restore();
 
   mainCtx.save();
@@ -158,6 +217,7 @@ function frame() {
   last = now;
   controller.tick();
   updateMouse();
+  chatterIfDue();
   world.step(dt);
   drawMascotLayer();
   drawGlassLayer();
@@ -166,6 +226,9 @@ function frame() {
 
 async function start() {
   await loadSprites('../assets/sprites');
+  const clips = await phrases.load();
+  phraseBag = new ShuffleBag(clips);
+  triggerBags = bagsByTrigger(clips);
   const info = await api.getScreen();
   applyScreen(info);
   cursor = info.cursor;
@@ -180,12 +243,16 @@ async function start() {
       burn: (at) => { glassWasActive = true; world.burn(at); },
     },
   });
-  controller.onClick = () => showBubble(CLICK_PHRASE, Config.bubbleDuration);
+  controller.onClick = onClick;
+  controller.onEvent = sayFor;
 
-  api.onCursor((p) => { cursor = p; });   // main already sends y up
+  api.onCursor((p) => {                    // main already sends y up
+    cursor = p;
+    if (userReturn.update(p, clock())) sayFor('userBack');
+  });
   api.onScreen((next) => { applyScreen(next); controller.pos = { ...controller.pos }; });
   api.onSystemEvent(onSystemEvent);
-  api.onTrigger((kind) => controller.trigger(kind));
+  api.onTrigger((kind) => (kind === 'say' ? sayRandom() : controller.trigger(kind)));
   window.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || !inside(controller.frame, cursor)) return;
     mouse.down = true; mouse.dragging = false; mouse.start = { ...cursor };
@@ -194,6 +261,7 @@ async function start() {
   window.addEventListener('mouseup', (e) => { if (e.button === 0) releaseMouse(); });
   window.addEventListener('blur', releaseMouse);
   requestAnimationFrame(frame);
+  setTimeout(() => sayFor('appStart'), GREETING_DELAY_MS);
 }
 
 start().catch((err) => { console.error('Mellstroy failed to start', err); api.reportError(String(err?.stack ?? err)); });

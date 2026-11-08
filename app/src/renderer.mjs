@@ -118,7 +118,8 @@ export function emberPoint(pose) {
 
 // MARK: Drawing
 
-export function drawMascot(ctx, pose) {
+/** `talkingFace` (optional, from PhrasePlayer.face()) replaces the painted face with a frame of a meme clip. */
+export function drawMascot(ctx, pose, talkingFace = null) {
   if (!sprites) return;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -128,7 +129,8 @@ export function drawMascot(ctx, pose) {
   applyBodyTransform(ctx, pose);
   for (const side of Side.both) drawLeg(ctx, pose, side);
   drawPart(ctx, sprites.body, RefMap.point(241, 581), 0);
-  drawFaceOverlay(ctx, pose.face, pose.isBlinking);
+  if (talkingFace) drawTalkingFace(ctx, talkingFace);
+  else drawFaceOverlay(ctx, pose.face, pose.isBlinking);
   if (pose.prop) drawProp(ctx, pose, pose.prop);
   if (pose.prop2) drawProp(ctx, pose, pose.prop2);
   for (const side of Side.both) drawArm(ctx, pose, side);
@@ -264,6 +266,20 @@ function drawEmberSmoke(ctx, pose) {
     const p = { x: ember.x + Math.sin(age * 9 + t * 2) * 3 * age + age * 4, y: ember.y + 2 + age * 34 };
     FX.block(ctx, p, { cells: age > 0.4 ? 2 : 1, color: tone(SMOKE_GREY, 1.05, 0, 0.75 * k * (1 - age * 0.8)) });
   }
+}
+
+/** A frame of a meme clip laid over the face, on the body sprite's own pixel grid (`rect` is in body.png pixels). */
+function drawTalkingFace(ctx, { image, sx, sy, sw, sh, rect }) {
+  const body = sprites.body;
+  const [rx, ry, rw, rh] = body.rect, [px, py] = body.pivot;
+  const k = RefMap.scale, artPixel = rw * k / body.image.naturalWidth;
+  const anchor = RefMap.point(px, py);
+  ctx.save();
+  ctx.translate(anchor.x + (rx - px) * k, anchor.y + (py - (ry + rh)) * k + rh * k);   // top-left of body.png, y-up
+  ctx.scale(1, -1);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, sx, sy, sw, sh, rect.x * artPixel, rect.y * artPixel, rect.w * artPixel, rect.h * artPixel);
+  ctx.restore();
 }
 
 /** Eyelids and the open mouth painted over the photographic face. The face only blinks (or sleeps);
