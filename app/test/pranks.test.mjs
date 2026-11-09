@@ -200,3 +200,45 @@ test('no fight on most hovers, and never with the switch off', async () => {
   assert.equal((await hoverController(true, 0.5)).nudges.length, 0);
   assert.equal((await hoverController(false, 0)).nudges.length, 0);
 });
+
+/** A 2D context stand-in that tracks the transform and records every point painted, in canvas pixels. */
+function recordingContext() {
+  let m = [1, 0, 0, 1, 0, 0];
+  const stack = [], points = [];
+  const at = (x, y) => points.push({ x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] });
+  const ctx = {
+    points,
+    save: () => stack.push([...m]),
+    restore: () => { m = stack.pop(); },
+    translate: (x, y) => { m = [m[0], m[1], m[2], m[3], m[4] + m[0] * x + m[2] * y, m[5] + m[1] * x + m[3] * y]; },
+    scale: (sx, sy) => { m = [m[0] * sx, m[1] * sx, m[2] * sy, m[3] * sy, m[4], m[5]]; },
+    beginPath() {}, clip() {}, fill() {}, stroke() {}, closePath() {},
+    moveTo: at, lineTo: at,
+    rect: (x, y, w, h) => { at(x, y); at(x + w, y + h); },
+    roundRect: (x, y, w, h) => { at(x, y); at(x + w, y + h); },
+    fillRect: (x, y, w, h) => { at(x, y); at(x + w, y + h); },
+    arc: (x, y, r) => { at(x - r, y - r); at(x + r, y + r); },
+    fillText: (_t, x, y) => at(x, y),
+    measureText: (t) => ({ width: t.length * 12 }),
+  };
+  return ctx;
+}
+
+test('the search bar never paints outside the rect it reports, so nothing is left on screen', () => {
+  const bar = new SearchBar();
+  const screenHeight = 1000;
+  bar.open({ x: 500, y: 600, w: 560, h: 46 }, 0);
+  bar.setText('крутить собак онлайн', 0.1);
+  for (let t = 0; t <= 2; t += 1 / 120) {
+    if (t >= 1 && bar.zappedAt === null) bar.zap(t);
+    if (t < 1) bar.setText('крутить собак онлайн', t);
+    const ctx = recordingContext();
+    const r = bar.draw(ctx, screenHeight, t);
+    if (!r) continue;
+    // stroked lines are up to 3 px wide and the shadow is accounted for in the pad, so the points must sit inside
+    for (const p of ctx.points) {
+      assert.ok(p.x >= r.x + 1.5 && p.x <= r.x + r.w - 1.5 && p.y >= r.y + 1.5 && p.y <= r.y + r.h - 1.5,
+        `t=${t.toFixed(3)}: (${p.x.toFixed(1)}, ${p.y.toFixed(1)}) outside ${JSON.stringify(r)}`);
+    }
+  }
+});

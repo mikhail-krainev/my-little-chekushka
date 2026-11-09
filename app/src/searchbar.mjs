@@ -10,6 +10,13 @@ const CARET_BLINK = 0.5;
 const RADIUS = 14;
 const FONT_PX = 22;
 const PLACEHOLDER = 'Поиск';
+/** How far (px, before scaling) things reach outside the box: the zap sparks to the left, the shaking, the shadow. */
+const SPARK_REACH = 28;
+const SHAKE_MAX = 9;
+const SHADOW_BLUR = 18;
+const SHADOW_OFFSET = 6;
+const SHADOW_REACH = SHADOW_BLUR * 1.5 + SHADOW_OFFSET;
+const SAFETY = 4;
 /** The bar vanishes when the scene stops feeding it text this long (the mascot was grabbed or called away). */
 const ABANDON_TIME = 0.5;
 
@@ -54,7 +61,7 @@ export class SearchBar {
     const pop = easeOutBack(clamp01((now - this.openedAt) / POP_TIME));
     const since = this.zappedAt === null ? null : now - this.zappedAt;
     const flash = since === null ? 0 : 1 - clamp01(since / FLASH_TIME);
-    const shake = since === null ? 0 : (1 - clamp01(since / SHAKE_TIME)) * Math.sin(since * 70) * 9;
+    const shake = since === null ? 0 : (1 - clamp01(since / SHAKE_TIME)) * Math.sin(since * 70) * SHAKE_MAX;
     const alpha = since === null ? 1 : 1 - clamp01((since - FADE_START) / FADE_TIME);
 
     ctx.save();
@@ -67,14 +74,16 @@ export class SearchBar {
     this.#drawText(ctx, w, h, now, since === null);
     if (flash > 0) this.#drawSparks(ctx, w, h, flash);
     ctx.restore();
-    const pad = 24;
-    return { x: x - pad, y: top - pad, w: w + 2 * pad, h: h + 2 * pad };
+    // Everything painted this frame, so the next frame clears all of it (the pop-in overshoots the box size).
+    const halfW = (w / 2) * pop, halfH = (h / 2) * pop, cx = x + w / 2, cy = top + h / 2;
+    const pad = Math.max(SPARK_REACH * pop, SHADOW_REACH) + SHAKE_MAX + SAFETY;
+    return { x: cx - halfW - pad, y: cy - halfH - pad, w: 2 * (halfW + pad), h: 2 * (halfH + pad) };
   }
 
   #drawBox(ctx, w, h, flash) {
     ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 6;
+    ctx.shadowBlur = SHADOW_BLUR;
+    ctx.shadowOffsetY = SHADOW_OFFSET;
     ctx.beginPath();
     ctx.roundRect(0, 0, w, h, RADIUS);
     ctx.fillStyle = flash > 0 ? `rgba(${Math.round(40 + 215 * flash)},${Math.round(40 + 60 * flash)},${Math.round(44 + 40 * flash)},0.95)` : 'rgba(40,40,44,0.92)';
@@ -129,7 +138,7 @@ export class SearchBar {
       ctx.moveTo(0, y0);
       ctx.lineTo(-14, y0 - 6);
       ctx.lineTo(-8, y0 + 4);
-      ctx.lineTo(-26, y0 - 2);
+      ctx.lineTo(-(SPARK_REACH - 2), y0 - 2);
     }
     ctx.stroke();
   }
