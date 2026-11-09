@@ -3,7 +3,7 @@
 // `play(name)` is safe to call any time: unknown names are reported once, a missing audio device is ignored.
 
 /** Quiet on purpose: the effects sit softly under the phrases, just audible. */
-const MASTER_GAIN = 0.18;
+const MASTER_GAIN = 0.216;
 const NOISE_SECONDS = 2;
 
 /** Every sound by name: a recipe of noise bursts and tones (see `noise` / `tone` below). Times in seconds. */
