@@ -34,6 +34,7 @@ const SWITCHES = [
   { label: 'Выкидывать курсор', setting: 'throwCursor' },
   { label: 'Искать «крутить собак онлайн»', setting: 'searchPrank' },
   { label: 'Драться с курсором', setting: 'fightCursor' },
+  { label: 'Звуки действий', setting: 'soundEffects' },
 ];
 
 let win = null;

@@ -6,6 +6,7 @@ import { describeEvent } from './events.mjs';
 import { Config } from './geometry.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { SearchBar } from './searchbar.mjs';
+import { Sfx } from './sfx.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { PhrasePlayer, ShuffleBag } from './talk.mjs';
 import { BurstCounter, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent } from './triggers.mjs';
@@ -46,6 +47,7 @@ let dirty = [];                    // rects (y down) painted on the mascot layer
 
 const bubble = new Bubble(clock);
 const searchBar = new SearchBar();
+const sfx = new Sfx();
 let settings = {};                  // prank switches from the main process (settings.js)
 const phrases = new PhrasePlayer(clock, '../assets/phrases');
 let phraseBag = new ShuffleBag([]);
@@ -73,7 +75,11 @@ function applyScreen(info) {
   dirty = [];
 }
 
-const newWorld = () => new ShatterWorld({ floor: screen.work.minY, bounds: { minX: screen.work.minX, maxX: screen.work.maxX } });
+function newWorld() {
+  const w = new ShatterWorld({ floor: screen.work.minY, bounds: { minX: screen.work.minX, maxX: screen.work.maxX } });
+  w.onSound = (name, gain) => sfx.play(name, { gain });
+  return w;
+}
 
 function showBubble(text, duration) {
   mainCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -239,6 +245,7 @@ async function start() {
   phraseBag = new ShuffleBag(clips);
   triggerBags = bagsByTrigger(clips);
   settings = await api.getSettings();
+  sfx.enabled = settings.soundEffects !== false;
   const info = await api.getScreen();
   applyScreen(info);
   cursor = info.cursor;
@@ -251,6 +258,7 @@ async function start() {
     moveFolder: (name, point) => api.moveFolder(name, point),
     throwCursor: (request) => api.throwCursor(request),
     nudgeCursor: (request) => api.nudgeCursor(request),
+    sfx: (name, gain) => sfx.play(name, { gain }),
     overlay: {
       search: {
         open: (rect) => searchBar.open(rect, clock()),
@@ -278,7 +286,7 @@ async function start() {
     else if (kind === 'foldersReset') sayFor('foldersReset', { requested: true });
     else controller.trigger(kind);
   });
-  api.onSettings((next) => { settings = next; });
+  api.onSettings((next) => { settings = next; sfx.enabled = next.soundEffects !== false; });
   api.onFolderOpened((rect) => controller.peekInto(rect));
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();

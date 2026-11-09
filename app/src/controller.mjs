@@ -7,6 +7,7 @@ import { Config, Side, clamp, rand } from './geometry.mjs';
 import { blendPoses, newFace } from './pose.mjs';
 import { emberPoint, handPoint, mouthPoint } from './renderer.mjs';
 import * as Stunts from './stunts.mjs';
+import { soundCues } from './sounds.mjs';
 
 const SIZE = Config.mascotSize;
 
@@ -41,7 +42,7 @@ const CURSOR_WINDUP = 0.35;
 const CURSOR_FLIGHT = 0.5;
 /** Cursor fight: chance per time the cursor comes over him, pause before the next one (s), push per punch (px),
  *  how far the cursor may be (px from his box) and still get hit, and how long a push takes (s). */
-const FIGHT_CHANCE = 0.1;
+const FIGHT_CHANCE = 0.4;
 const FIGHT_COOLDOWN = 20;
 const FIGHT_PUSH = 34;
 const FIGHT_REACH = 160;
@@ -61,6 +62,7 @@ export class MascotController {
    * @param env.moveFolder  (name, {x, y}) => void           puts an icon centre there
    * @param env.throwCursor ({ to, duration }) => void       flings the system cursor to `to`
    * @param env.nudgeCursor ({ dx, dy, duration }) => void   pushes the system cursor by (dx, dy), y up
+   * @param env.sfx         (name, gain) => void              plays a sound effect (sfx.mjs)
    * @param env.overlay.search { open(rect), type(text), zap() }  the drawn search bar
    * `onEvent(name, { requested })` (optional) hears what happens to the mascot: pickedUp, thrown, hitWall, grabbedCursor,
    * wokenUp, and from floor actions sit, sleep, stretch, smoke, hookah, spit, drunk, vomit; `requested` is true when the
@@ -79,6 +81,8 @@ export class MascotController {
     this.throwPlanned = false;         // the next cursor grab ends in a throw
     this.fightAllowedAt = 0;           // no new cursor fight before this time
     this.cueIndex = 0;
+    this.soundIndex = 0;
+    this.stepCount = 0;
     this.spitTarget = null;
     this.blendFrom = null;
     this.blendStart = 0;
@@ -156,6 +160,7 @@ export class MascotController {
     this.pendingPerformance = null;
     this.pendingScene = null;
     this.state = { type: 'dragged' };
+    this.#sound('grab');
     this.onEvent?.('pickedUp');
   }
 
@@ -167,7 +172,7 @@ export class MascotController {
     const cap = Config.throwVelocityCap;
     this.vel = { x: clamp(v.x, -cap, cap), y: clamp(v.y, -cap, cap) };
     this.state = { type: 'air' };
-    if (Math.hypot(this.vel.x, this.vel.y) >= THROWN_SPEED) this.onEvent?.('thrown');
+    if (Math.hypot(this.vel.x, this.vel.y) >= THROWN_SPEED) { this.#sound('whoosh'); this.onEvent?.('thrown'); }
   }
 
   // MARK: Simulation
@@ -199,6 +204,7 @@ export class MascotController {
         this.walkPhase += dt * (st.run ? 14 : 8);
         const arrived = this.#stepToward(st.to, st.run ? Config.runSpeed : Config.walkSpeed, dt);
         pose = Animator.walk(this.walkPhase, this.dir, st.run, base);
+        this.#stepSounds(st.run ? 0.9 : 0.45);
         if (arrived || t > st.until) this.#finishMove(rand(0.5, 2.5));
         break;
       }
@@ -206,13 +212,14 @@ export class MascotController {
         const el = t - st.start;
         pose = Animator.performance(st.perf, el, base);
         this.#fireCues(st.perf, el, base);
+        this.#fireSounds(st.perf, el);
         if (el >= st.perf.duration) this.state = { type: 'idle', until: t + rand(0.6, 1.5) };
         break;
       }
       case 'crouch': {
         const k = (t - st.start) / Config.crouchDuration;
         pose = Animator.crouch(Math.min(1, k), this.dir, base);
-        if (k >= 1) this.state = { type: 'leap', jump: st.jump, start: t };
+        if (k >= 1) { this.state = { type: 'leap', jump: st.jump, start: t }; this.#sound('jump'); }
         break;
       }
       case 'leap': {
@@ -227,6 +234,7 @@ export class MascotController {
           else {
             if (j.chaseCursor) this.throwPlanned = false;
             this.state = { type: 'land', start: t };
+            this.#sound('land');
           }
         }
         break;
@@ -288,12 +296,13 @@ export class MascotController {
     if (this.pos.x > maxX) { this.pos.x = maxX; this.vel.x = -Math.abs(this.vel.x) * 0.5; hitWall = true; }
     const ceiling = b.maxY - SIZE.height;
     if (this.pos.y > ceiling) { this.pos.y = ceiling; this.vel.y = -Math.abs(this.vel.y) * 0.4; hitWall = true; }
-    if (hitWall && impact >= WALL_HIT_SPEED) this.onEvent?.('hitWall');
+    if (hitWall && impact >= WALL_HIT_SPEED) { this.#sound('bonk'); this.onEvent?.('hitWall'); }
     if (!(this.pos.y <= ground && this.vel.y < 0)) return;
     this.pos.y = ground;
-    if (Math.abs(this.vel.y) > 350) { this.vel.y = -this.vel.y * 0.4; this.vel.x *= 0.7; return; }
+    if (Math.abs(this.vel.y) > 350) { this.vel.y = -this.vel.y * 0.4; this.vel.x *= 0.7; this.#sound('thud', 0.8); return; }
     this.vel = { x: 0, y: 0 };
     this.state = { type: 'land', start: this.now };
+    this.#sound('land');
   }
 
   /** Moves toward `target` (2D, anywhere on screen). Returns true on arrival. */
@@ -357,6 +366,7 @@ export class MascotController {
   #begin(perf) {
     const p = { ...perf };
     this.cueIndex = 0;
+    this.soundIndex = 0;
     if (p.kind === 'spit') this.#aimSpit(p);
     if (p.kind === 'hookah') this.#roomBeside(p, 110);
     if (p.kind === 'pizza') this.#roomBeside(p, 140);
@@ -479,6 +489,7 @@ export class MascotController {
     const delay = this.throwPlanned ? 0.8 : rand(CURSOR_THROW_DELAY.min, CURSOR_THROW_DELAY.max);
     this.throwPlanned = false;
     this.state = { type: 'hanging', until: this.now + Config.hangDuration, throwAt: throws ? this.now + delay : null };
+    this.#sound('grab');
     this.onEvent?.('grabbedCursor');
   }
 
@@ -561,12 +572,13 @@ export class MascotController {
     const sc = st.scene, el = t - st.start;
     switch (sc.kind) {
       case 'peek':
-        if (!sc.spoke && el >= Stunts.PEEK_STARTLE) { sc.spoke = true; this.#say('folderPeek'); }
+        if (!sc.spoke && el >= Stunts.PEEK_STARTLE) { sc.spoke = true; this.#sound('boing'); this.#say('folderPeek'); }
         if (el >= Stunts.PEEK_DURATION) this.#endScene();
         return Stunts.peek(el, sc.side, base);
       case 'push': return this.#stepPush(sc, t, dt, base);
       case 'search': return this.#stepSearch(sc, el, base);
       case 'angry':
+        this.#everySound(sc, el, Math.PI / 9, 'stomp');
         if (el >= Stunts.ANGRY_DURATION) this.#endScene();
         return Stunts.angry(el, base);
       case 'fight': return this.#stepFight(sc, el, base);
@@ -619,6 +631,8 @@ export class MascotController {
     const stuck = remaining > 0.5 && Math.abs(nextX - this.pos.x) < 1e-6 && dt > 0;
     this.pos.x = nextX;
     const done = remaining <= 0.5 || stuck;
+    sc.startedAt ??= t;
+    if (!done) this.#everySound(sc, t - sc.startedAt, 0.35, 'scrape');
     if (done || t - sc.sentAt >= FOLDER_SEND_INTERVAL) {
       this.env.moveFolder(sc.name, { x: this.pos.x + sc.offset.x, y: this.pos.y + sc.offset.y });
       sc.sentAt = t;
@@ -640,11 +654,16 @@ export class MascotController {
 
   #stepSearch(sc, el, base) {
     const bar = this.env.overlay.search;
-    if (!sc.opened && el >= Stunts.SEARCH_OPEN) { sc.opened = true; bar?.open(sc.rect); }
-    if (sc.opened) bar?.type(Stunts.typedText(el));
+    if (!sc.opened && el >= Stunts.SEARCH_OPEN) { sc.opened = true; bar?.open(sc.rect); this.#sound('chime'); }
+    if (sc.opened) {
+      const text = Stunts.typedText(el);
+      if (text.length > (sc.typed ?? 0)) { sc.typed = text.length; this.#sound('key'); }
+      bar?.type(text);
+    }
     const pose = Stunts.typing(el, sc.dir, base);
     if (el >= Stunts.SEARCH_ZAP) {
       bar?.zap();
+      this.#sound('zap');
       this.vel = { x: -sc.dir * rand(SEARCH_KNOCKBACK.x.min, SEARCH_KNOCKBACK.x.max), y: rand(SEARCH_KNOCKBACK.y.min, SEARCH_KNOCKBACK.y.max) };
       this.pendingScene = { kind: 'angry' };
       this.state = { type: 'air' };
@@ -672,6 +691,7 @@ export class MascotController {
       sc.hits++;
       const m = this.env.getCursor(), f = this.frame;
       const near = m.x > f.x - FIGHT_REACH && m.x < f.x + f.w + FIGHT_REACH && m.y > f.y - FIGHT_REACH && m.y < f.y + f.h + FIGHT_REACH;
+      this.#sound(near ? 'punch' : 'swish');
       if (near) this.env.nudgeCursor?.({ dx: sc.dir * FIGHT_PUSH, dy: rand(-6, 10), duration: FIGHT_PUSH_TIME });
     }
     if (el >= Stunts.FIGHT_DURATION) this.#endScene();
@@ -691,8 +711,34 @@ export class MascotController {
       y: rand(w.minY + (w.maxY - w.minY) * 0.4, w.maxY - 20),
     };
     this.env.throwCursor?.({ to, duration: CURSOR_FLIGHT });
+    this.#sound('whoosh');
     this.#say('cursorThrown');
     this.vel = { x: -dir * 220, y: 140 };                          // recoil, then drops to the floor
     this.state = { type: 'air' };
+  }
+
+  // MARK: Sounds
+
+  #sound(name, gain = 1) { this.env.sfx?.(name, gain); }
+
+  /** Plays the scene's sounds whose time has come, each once. */
+  #fireSounds(perf, elapsed) {
+    perf.sounds ??= soundCues(perf);
+    while (this.soundIndex < perf.sounds.length && elapsed >= perf.sounds[this.soundIndex].at) {
+      const s = perf.sounds[this.soundIndex++];
+      this.#sound(s.name, s.gain ?? 1);
+    }
+  }
+
+  /** A footstep each time a foot comes down (every half walk cycle). */
+  #stepSounds(gain) {
+    const steps = Math.floor(this.walkPhase / Math.PI);
+    if (steps !== this.stepCount) { this.stepCount = steps; this.#sound('step', gain); }
+  }
+
+  /** `name` once every `period` seconds of a scene (`elapsed`), counted on the scene object. */
+  #everySound(sc, elapsed, period, name) {
+    const n = Math.floor(elapsed / period);
+    if (n > (sc.soundCount ?? -1)) { sc.soundCount = n; this.#sound(name); }
   }
 }

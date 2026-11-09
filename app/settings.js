@@ -10,6 +10,7 @@ const DEFAULTS = Object.freeze({
   throwCursor: true,     // grabs the cursor and flings it away
   searchPrank: true,     // opens a search bar and tries to type «крутить собак онлайн»
   fightCursor: true,     // sometimes boxes the cursor away when it comes over him
+  soundEffects: true,    // quiet sound effects for everything he does
 });
 
 class Settings {

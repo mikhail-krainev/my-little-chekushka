@@ -68,6 +68,7 @@ export class ShatterWorld {
     this.smokes = [];
     this.burns = [];
     this.junk = [];
+    this.onSound = null;           // (name, gain) => void: impacts the app turns into sound effects
     this.random = mulberry32(seed);
   }
 
@@ -122,6 +123,7 @@ export class ShatterWorld {
       const onFloor = j.pos.y <= this.floor + 4 && j.vel.y <= 0;
       if (onFloor) {
         j.pos.y = this.floor + 4;
+        if (Math.abs(j.vel.y) > 200) this.onSound?.('thud', Math.min(1, Math.abs(j.vel.y) / 900));
         j.vel.y = Math.abs(j.vel.y) > 200 ? -j.vel.y * JUNK_BOUNCE : 0;
         j.vel.x *= Math.max(0, 1 - JUNK_FRICTION * dt);
         j.spin *= Math.max(0, 1 - JUNK_FRICTION * dt);
@@ -165,6 +167,7 @@ export class ShatterWorld {
   }
 
   #splash(p) {
+    this.onSound?.('splat', 1);
     const radius = this.rand(9, 13);
     const drips = Array.from({ length: this.randInt(2, 4) }, () => ({
       dx: this.rand(-radius * 0.6, radius * 0.6), speed: this.rand(14, 30), maxLength: this.rand(14, 42), width: this.randInt(1, 2),
@@ -194,6 +197,7 @@ export class ShatterWorld {
 
   #shatter(b) {
     const impact = { x: b.pos.x, y: this.floor + 3 };
+    this.onSound?.('shatter', 1);
     const count = b.kind === 'beer' ? 34 : 26;
     for (let i = 0; i < count; i++) {
       const angle = this.rand(0.12 * Math.PI, 0.88 * Math.PI);

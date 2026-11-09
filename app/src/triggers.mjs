@@ -56,7 +56,7 @@ export const COOLDOWNS = {
     'folderCreated', 'fileDownloaded', 'screenshot', 'fileCreated', 'fileDeleted', 'massDelete',
     'browserLaunched', 'messengerLaunched', 'codeLaunched', 'appLaunched', 'appQuit',
   ]) },
-  action: { seconds: 25, triggers: new Set(['sit', 'sleep', 'stretch', 'smoke', 'hookah', 'spit', 'drunk', 'vomit', 'burger', 'pizza']) },
+  action: { seconds: 6, triggers: new Set(['sit', 'sleep', 'stretch', 'smoke', 'hookah', 'spit', 'drunk', 'vomit', 'burger', 'pizza']) },
 };
 
 // App names: macOS bundle names and Windows process names.

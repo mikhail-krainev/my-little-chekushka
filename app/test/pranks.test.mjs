@@ -66,7 +66,7 @@ test('the search bar opens empty, shows text, and is gone after the zap or when 
 test('settings default to on, persist, and refuse unknown names', () => {
   const dir = tempDir();
   const first = new Settings(dir);
-  assert.deepEqual(first.all(), { peekFolders: true, moveFolders: true, throwCursor: true, searchPrank: true, fightCursor: true });
+  assert.deepEqual(first.all(), { peekFolders: true, moveFolders: true, throwCursor: true, searchPrank: true, fightCursor: true, soundEffects: true });
   first.set('throwCursor', false);
   assert.equal(new Settings(dir).get('throwCursor'), false);
   assert.throws(() => first.set('formatDisk', true));
