@@ -5,7 +5,7 @@ import { blend, dome, grain, hash, tone } from './artstyle.mjs';
 import * as FX from './pixelfx.mjs';
 import * as Props from './props.mjs';
 import {
-  DROPLET_LIFETIME, burnAlpha, burnGlow, dripLength, globPosition, globProgress, shardAlpha, smokeAlpha, smokeScale, splatAlpha,
+  DROPLET_LIFETIME, burnAlpha, junkAlpha, burnGlow, dripLength, globPosition, globProgress, shardAlpha, smokeAlpha, smokeScale, splatAlpha,
 } from './shatter.mjs';
 
 const PX = Config.pixelSize;
@@ -30,6 +30,15 @@ export function drawWorld(ctx, world) {
   for (const s of world.shards) drawShard(ctx, s);
   for (const s of world.splats) drawSplat(ctx, s);
   for (const g of world.spits) drawGlob(ctx, g);
+  for (const j of world.junk) {
+    ctx.save();
+    ctx.globalAlpha = junkAlpha(j);
+    ctx.translate(j.pos.x, j.pos.y);
+    ctx.rotate(j.angle);
+    ctx.scale(Config.spriteScale, Config.spriteScale);
+    Props.draw(ctx, { kind: j.kind, angle: 0 });
+    ctx.restore();
+  }
   for (const b of world.bottles) {
     ctx.save();
     ctx.translate(b.pos.x, b.pos.y);

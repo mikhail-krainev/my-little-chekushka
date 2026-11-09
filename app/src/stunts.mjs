@@ -90,3 +90,32 @@ export function angry(t, base) {
 
 /** Hanging from the cursor, swinging back to fling it: `k` 0 just grabbed ... 1 the moment of the throw. */
 export const windupSwing = (k, dir) => -dir * 0.7 * Math.sin(lerp(0, Math.PI / 2, ease(k)));
+
+/** Fist fight with the cursor: a boxing stance and punches that land at FIGHT_HITS (seconds into the scene). */
+export const FIGHT_DURATION = 3.0;
+export const FIGHT_HITS = [0.45, 0.85, 1.25, 1.65, 2.05, 2.45];
+const PUNCH_TIME = 0.3;
+
+/** Boxing at the cursor on side `dir`: guard up, alternating jabs (front fist) and crosses (back fist). */
+export function fight(t, dir, base) {
+  const p = newPose(base);
+  const front = Side.fromSign(dir), back = Side.other(front);
+  const on = ease(seg(t, 0, 0.25)) * (1 - ease(seg(t, FIGHT_DURATION - 0.35, FIGHT_DURATION)));
+  const guard = { [front]: swing(front, 2.0 + 0.06 * Math.sin(t * 9)), [back]: swing(back, 2.25 + 0.06 * Math.sin(t * 9 + 1)) };
+  let lean = 0;
+  for (const s of Side.both) p.hands[s] = mix(swing(s, MascotRig.restSwing), guard[s], on);
+  FIGHT_HITS.forEach((hit, i) => {
+    const k = bump(t, hit - PUNCH_TIME * 0.6, hit + PUNCH_TIME * 0.4);
+    if (k <= 0) return;
+    const hand = i % 2 === 0 ? front : back;
+    const strike = hand === front ? swing(front, 1.55) : swing(back, -1.35);
+    p.hands[hand] = mix(p.hands[hand], strike, k);
+    lean = Math.max(lean, k);
+  });
+  p.tilt = -dir * (0.06 * on + 0.14 * lean);
+  p.shift = { x: dir * 4 * lean, y: 2 * Math.abs(Math.sin(t * 9)) * on };
+  p.squash = 0.02 * Math.sin(t * 9) * on;
+  p.face.mouthOpen = 0.3 * lean;
+  for (const s of Side.both) p.feet[s] = newFoot(Side.sign(s) * 5 * on + (s === front ? dir * 4 : 0) * on, 0, 0);
+  return p;
+}

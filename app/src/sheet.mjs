@@ -1,11 +1,12 @@
 // Developer / documentation tool: renders pose sheets and broken-glass strips to a canvas (used for the README screenshots).
-// `sheet.html?set=poses|drinks|spit|smoke|hookah|pranks|phrases|glass` draws one sheet and sets `window.__sheetSize` when it is done.
+// `sheet.html?set=poses|drinks|spit|smoke|hookah|food|pranks|phrases|glass` draws one sheet and sets `window.__sheetSize` when it is done.
 import * as A from './animator.mjs';
 import { Config, rgb } from './geometry.mjs';
 import { newFace } from './pose.mjs';
 import { beginYUp, drawMascot, emberPoint, loadSprites, mouthPoint } from './renderer.mjs';
 import { HOOKAH, SMOKE } from './smoking.mjs';
 import * as S from './stunts.mjs';
+import { BURGER_SCENE as B, PIZZA_SCENE as P } from './eating.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
 import { PhrasePlayer, faceFrame } from './talk.mjs';
@@ -73,6 +74,21 @@ function poses(set) {
         scene(p, 'hookah: two clouds', T.firstPuff + T.cycle + T.exhaleAt + 1.2),
         scene(p, 'hookah: last pull', T.firstPuff + 3 * T.cycle + 1.2),
         scene(p, 'hookah: get up', T.standEnd + 0.1),
+      ];
+    }
+    case 'food': {
+      const b = perf('burger'), z = perf('pizza');
+      return [
+        scene(b, 'burger: take it out', B.show - 0.2),
+        scene(b, 'burger: bite', B.bite - 0.02),
+        scene(b, 'burger: delighted', B.brag + 0.25),
+        scene(b, 'burger: show it off', B.joyEnd + 1.0),
+        scene(z, 'pizza: open the box', P.open - 0.1),
+        scene(z, 'pizza: plastic bite', P.raise + 0.5),
+        scene(z, 'pizza: furious', P.rage + 0.5),
+        scene(z, 'pizza: throw the box', P.windupEnd),
+        ['fight: jab', S.fight(S.FIGHT_HITS[0], 1, base)],
+        ['fight: cross', S.fight(S.FIGHT_HITS[1], 1, base)],
       ];
     }
     case 'pranks': return [

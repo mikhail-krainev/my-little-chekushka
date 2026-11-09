@@ -4,6 +4,7 @@ import { CELL, MascotRig, Palette, RefMap, Side, rgb, withAlpha } from './geomet
 import { dome, grain, tone } from './artstyle.mjs';
 import * as FX from './pixelfx.mjs';
 import * as Props from './props.mjs';
+import { drawPizzaBox } from './food.mjs';
 import { drawVomit } from './vomit.mjs';
 
 /** Switches a canvas context to y-up device-independent units (origin bottom-left of a `height`-tall canvas). */
@@ -125,6 +126,7 @@ export function drawMascot(ctx, pose, talkingFace = null) {
   ctx.imageSmoothingEnabled = false;
   drawShadow(ctx, pose);
   if (pose.effects.hookah) drawHookahScene(ctx, pose);
+  if (pose.effects.pizzaBox) drawPizzaBoxScene(ctx, pose.effects.pizzaBox);
   ctx.save();
   applyBodyTransform(ctx, pose);
   for (const side of Side.both) drawLeg(ctx, pose, side);
@@ -194,6 +196,17 @@ function drawHookahScene(ctx, pose) {
   const pipe = pose.prop?.kind === 'mouthpiece' && pose.prop.scale > 0.5 ? pose.prop : null;
   const end = pipe ? bodyPoint(pose, propLocalToBody(pose, pipe, Props.MOUTHPIECE_HOSE_JOINT)) : { x: port.x + facing * 14, y: 3 };
   Props.drawHose(ctx, port, end);
+}
+
+/** The pizza box on the floor beside the mascot, lid opening toward the back. Drawn behind the body. */
+function drawPizzaBoxScene(ctx, box) {
+  const base = { x: MascotRig.centerX + box.side * box.distance, y: 0 };
+  ctx.save();
+  FX.ellipse(ctx, { x: base.x + 5, y: 1 }, 38 * box.scale, 3, { color: rgb(0, 0, 0, 0.18) });
+  ctx.translate(base.x, base.y);
+  ctx.scale(box.scale, box.scale);
+  drawPizzaBox(ctx, { lid: box.lid, taken: box.taken });
+  ctx.restore();
 }
 
 // MARK: Effects

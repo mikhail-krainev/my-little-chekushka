@@ -18,6 +18,7 @@ export function newEffects() {
     vomit: null,           // { elapsed, flowEnd, side, isBeer, fade }
     emberSmoke: 0,         // 0...1 thin smoke curling up from a held cigarette
     hookah: null,          // { side, scale, glow, bubbles, time, distance } hookah standing on the floor
+    pizzaBox: null,        // { side, distance, scale, lid, taken } pizza box on the floor
   };
 }
 

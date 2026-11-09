@@ -4,8 +4,9 @@ import { newPose, newFoot, mirrored } from './pose.mjs';
 import { aimAtMouth, bump, ease, mix, mouthSwing, seg, swing } from './motion.mjs';
 import { HOOKAH, SMOKE, hookah, smoke } from './smoking.mjs';
 import { tipDistance } from './props.mjs';
+import { BURGER_SCENE, PIZZA_SCENE, burger, pizza } from './eating.mjs';
 
-export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit', 'smoke', 'hookah'];
+export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza'];
 /** Chance that a drinker is sick after the bottle. */
 export const VOMIT_CHANCE = 0.5;
 export const STRETCH_DURATION = 11.6;
@@ -33,6 +34,8 @@ export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vom
     case 'spit': duration = SPIT_DURATION; break;
     case 'smoke': duration = SMOKE.end; break;
     case 'hookah': duration = HOOKAH.end; break;
+    case 'burger': duration = BURGER_SCENE.end; break;
+    case 'pizza': duration = PIZZA_SCENE.end; break;
     default: throw new Error(`unknown performance: ${kind}`);
   }
   return { kind, duration, side, vomits: sick };
@@ -152,6 +155,8 @@ export function performance(perf, t, base) {
     case 'spit': p = spit(t, perf.side, base); break;
     case 'smoke': p = smoke(t, perf.side, base); break;
     case 'hookah': p = hookah(t, perf.side, base); break;
+    case 'burger': p = burger(t, perf.side, base); break;
+    case 'pizza': p = pizza(t, perf.side, base); break;
     default: throw new Error(`unknown performance: ${perf.kind}`);
   }
   p.time = t;
@@ -272,7 +277,8 @@ export function drinkTimeline(kind, vomits = false) {
  * Moments when a scene affects the screen around the mascot, in time order:
  * `throw` (empty bottle leaves the hand), `spit`, `exhale` (a smoke cloud leaves the mouth; `drift` is relative to the
  * scene side), `burn` (cigarette pressed out), `vomit` / `drunk` (after drinking: gets sick / keeps it down; only a
- * moment for the mascot to say something, nothing leaves it).
+ * moment for the mascot to say something, nothing leaves it), `burger` / `pizza` (the moment for the food phrase),
+ * `toss` (the pizza box leaves the hand; `item` says what flies).
  */
 export function cues(perf) {
   switch (perf.kind) {
@@ -288,6 +294,8 @@ export function cues(perf) {
     ];
     case 'hookah': return Array.from({ length: HOOKAH.puffs }, (_, i) => (
       { at: HOOKAH.firstPuff + i * HOOKAH.cycle + HOOKAH.exhaleAt, type: 'exhale', size: 1, life: HOOKAH.cloudLife, drift: -1 }));
+    case 'burger': return [{ at: BURGER_SCENE.brag, type: 'burger' }];
+    case 'pizza': return [{ at: PIZZA_SCENE.rage, type: 'pizza' }, { at: PIZZA_SCENE.release, type: 'toss', item: 'pizzaBox' }];
     default: return [];
   }
 }

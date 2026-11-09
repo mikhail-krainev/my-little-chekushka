@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('mellstroy', {
   listFolders: () => ipcRenderer.invoke('folders:list'),
   moveFolder: (name, point) => ipcRenderer.send('folders:move', String(name), { x: Number(point.x), y: Number(point.y) }),
   throwCursor: (request) => ipcRenderer.send('cursor:throw', request),
+  nudgeCursor: (request) => ipcRenderer.send('cursor:nudge', request),
 });

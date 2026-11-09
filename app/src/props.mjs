@@ -5,6 +5,7 @@
 import { CELL, rgb } from './geometry.mjs';
 import { blend, cylinder, grain, hash, tone } from './artstyle.mjs';
 import * as FX from './pixelfx.mjs';
+import { drawBurger, drawHeldBox, drawPizzaSlice, foodTipDistance } from './food.mjs';
 
 const GRAIN = 0.05;
 const WHITE = rgb(1, 1, 1);
@@ -44,6 +45,7 @@ const MOUTHPIECE = { rows: 25, gripRow: 5 };
 export function tipDistance(kind) {
   if (kind === 'cigarette') return (CIGARETTE.rows - CIGARETTE.gripRow) * CELL;
   if (kind === 'mouthpiece') return (MOUTHPIECE.rows - MOUTHPIECE.gripRow) * CELL;
+  if (kind === 'burger' || kind === 'pizzaSlice') return foodTipDistance(kind);
   return SHAPES[kind].tipDistance;
 }
 
@@ -103,6 +105,9 @@ export function draw(ctx, prop) {
     case 'cigarette': drawCigarette(ctx, prop); return;
     case 'lighter': drawLighter(ctx, prop); return;
     case 'mouthpiece': drawMouthpiece(ctx); return;
+    case 'burger': drawBurger(ctx, prop); return;
+    case 'pizzaSlice': drawPizzaSlice(ctx); return;
+    case 'pizzaBox': drawHeldBox(ctx); return;
     default: drawBottle(ctx, prop);
   }
 }

@@ -19,6 +19,8 @@ const ACTIONS = [
   { label: 'Плюнуть в экран', kind: 'spit' },
   { label: 'Покурить сигарету', kind: 'smoke' },
   { label: 'Покурить кальян', kind: 'hookah' },
+  { label: 'Съесть бургер', kind: 'burger' },
+  { label: 'Съесть пиццу', kind: 'pizza' },
   { label: 'Сказать фразу', kind: 'say' },
   { label: 'Подвинуть папку', kind: 'pushFolder', setting: 'moveFolders' },
   { label: 'Выкинуть курсор', kind: 'throwCursor', setting: 'throwCursor' },
@@ -31,6 +33,7 @@ const SWITCHES = [
   { label: 'Двигать папки на рабочем столе', setting: 'moveFolders' },
   { label: 'Выкидывать курсор', setting: 'throwCursor' },
   { label: 'Искать «крутить собак онлайн»', setting: 'searchPrank' },
+  { label: 'Драться с курсором', setting: 'fightCursor' },
 ];
 
 let win = null;
@@ -123,6 +126,20 @@ function relayoutOnDisplayChange() {
   screen.on('display-metrics-changed', update);
   screen.on('display-added', update);
   screen.on('display-removed', update);
+}
+
+/** A punch: moves the cursor a short way (layer units, y up), never off the display. */
+function nudgeCursor(request) {
+  const dx = Number(request?.dx), dy = Number(request?.dy);
+  if (!settings.get('fightCursor') || !Number.isFinite(dx) || !Number.isFinite(dy)) return;
+  const limit = 120;
+  const b = currentDisplay.bounds, from = screen.getCursorScreenPoint();
+  const to = {
+    x: Math.min(Math.max(from.x + Math.max(-limit, Math.min(limit, dx)), b.x + 2), b.x + b.width - 2),
+    y: Math.min(Math.max(from.y - Math.max(-limit, Math.min(limit, dy)), b.y + 2), b.y + b.height - 2),
+  };
+  const duration = Math.min(Math.max(Number(request.duration) || 0.12, 0.05), 0.5);
+  flingCursor(screen, { from, to, duration, lift: 0 }).catch((err) => console.error('pushing the cursor failed:', err.message));
 }
 
 // MARK: Menus
@@ -231,6 +248,7 @@ ipcMain.on('menu:show', () => win && Menu.buildFromTemplate(menuTemplate()).popu
 ipcMain.handle('folders:list', () => listFolders());
 ipcMain.on('folders:move', (_e, name, point) => moveFolder(name, point));
 ipcMain.on('cursor:throw', (_e, request) => throwCursor(request));
+ipcMain.on('cursor:nudge', (_e, request) => nudgeCursor(request));
 
 app.whenReady().then(async () => {
   const shotsDir = screenshotsDir();

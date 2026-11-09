@@ -1,4 +1,5 @@
 // Physics of a thrown bottle: flight, impact, shards flying over the desktop, droplets; and of spit on the screen.
+// Thrown junk (the pizza box) does not break: it bounces, slides to a stop, lies a moment and fades.
 // Shards lie on the floor until `Config.shardLifetime` seconds after the impact, then fade away.
 // Coordinates: y up, origin bottom-left of the screen layer.
 import { Config } from './geometry.mjs';
@@ -26,6 +27,11 @@ export const BURN_LIFETIME = 5;
 export const BURN_FADE = 0.8;
 export const BURN_GLOW_TIME = 1.6;
 const SMOKE_GROW_TIME = 0.7;
+/** Thrown junk lies on the floor this long after it was thrown, the last part fading. */
+export const JUNK_LIFETIME = 4.5;
+export const JUNK_FADE = 0.8;
+const JUNK_BOUNCE = 0.3;
+const JUNK_FRICTION = 6;
 
 export const shardAlpha = (s) => {
   const fadeStart = Config.shardLifetime - Config.shardFadeDuration;
@@ -43,6 +49,7 @@ export const smokeScale = (s) => {
   const k = Math.min(1, s.age / SMOKE_GROW_TIME);
   return 0.35 + 0.55 * (1 - (1 - k) ** 3) + 0.1 * (s.age / s.life);
 };
+export const junkAlpha = (j) => Math.max(0, Math.min(1, (JUNK_LIFETIME - j.age) / JUNK_FADE));
 export const burnAlpha = (b) => Math.max(0, Math.min(1, (BURN_LIFETIME - b.age) / BURN_FADE));
 /** Glow of the still-hot spot right after the butt was pressed out, 1 ... 0. */
 export const burnGlow = (b) => Math.max(0, 1 - b.age / BURN_GLOW_TIME);
@@ -60,12 +67,13 @@ export class ShatterWorld {
     this.splats = [];
     this.smokes = [];
     this.burns = [];
+    this.junk = [];
     this.random = mulberry32(seed);
   }
 
   get isEmpty() {
     return !(this.bottles.length || this.shards.length || this.droplets.length || this.spits.length || this.splats.length
-      || this.smokes.length || this.burns.length);
+      || this.smokes.length || this.burns.length || this.junk.length);
   }
 
   rand(a, b) { return a + this.random() * (b - a); }
@@ -73,6 +81,11 @@ export class ShatterWorld {
 
   throwBottle(kind, from, velocity) {
     this.bottles.push({ kind, pos: { ...from }, vel: { ...velocity }, angle: 0, spin: this.rand(9, 15) * (velocity.x >= 0 ? -1 : 1) });
+  }
+
+  /** Something that does not break (`kind`: a held prop kind, e.g. pizzaBox) thrown from `from`. */
+  toss(kind, from, velocity) {
+    this.junk.push({ kind, pos: { ...from }, vel: { ...velocity }, angle: 0, spin: this.rand(6, 10) * (velocity.x >= 0 ? -1 : 1), age: 0 });
   }
 
   launchSpit(from, target) {
@@ -100,6 +113,31 @@ export class ShatterWorld {
     this.#stepDroplets(dt);
     this.#stepSpits(dt);
     this.#stepSmoke(dt);
+    this.#stepJunk(dt);
+  }
+
+  #stepJunk(dt) {
+    for (const j of this.junk) {
+      j.age += dt;
+      const onFloor = j.pos.y <= this.floor + 4 && j.vel.y <= 0;
+      if (onFloor) {
+        j.pos.y = this.floor + 4;
+        j.vel.y = Math.abs(j.vel.y) > 200 ? -j.vel.y * JUNK_BOUNCE : 0;
+        j.vel.x *= Math.max(0, 1 - JUNK_FRICTION * dt);
+        j.spin *= Math.max(0, 1 - JUNK_FRICTION * dt);
+        j.angle += (Math.round(j.angle / Math.PI) * Math.PI - j.angle) * Math.min(1, dt * 8);   // settles flat
+      } else {
+        j.vel.y -= Config.gravity * dt;
+      }
+      j.pos.x += j.vel.x * dt;
+      j.pos.y += j.vel.y * dt;
+      j.angle += j.spin * dt;
+      if (j.pos.x < this.bounds.minX || j.pos.x > this.bounds.maxX) {
+        j.pos.x = Math.min(Math.max(j.pos.x, this.bounds.minX), this.bounds.maxX);
+        j.vel.x = -j.vel.x * 0.4;
+      }
+    }
+    this.junk = this.junk.filter((j) => j.age < JUNK_LIFETIME);
   }
 
   #stepSmoke(dt) {

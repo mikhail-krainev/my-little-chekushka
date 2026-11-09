@@ -250,6 +250,7 @@ async function start() {
     listFolders: () => api.listFolders(),
     moveFolder: (name, point) => api.moveFolder(name, point),
     throwCursor: (request) => api.throwCursor(request),
+    nudgeCursor: (request) => api.nudgeCursor(request),
     overlay: {
       search: {
         open: (rect) => searchBar.open(rect, clock()),
@@ -257,6 +258,7 @@ async function start() {
         zap: () => searchBar.zap(clock()),
       },
       throwBottle: (kind, origin, velocity) => { glassWasActive = true; world.throwBottle(kind, origin, velocity); },
+      toss: (kind, origin, velocity) => { glassWasActive = true; world.toss(kind, origin, velocity); },
       spit: (origin, target) => { glassWasActive = true; world.launchSpit(origin, target); },
       smoke: (origin, opts) => { glassWasActive = true; world.puffSmoke(origin, opts); },
       burn: (at) => { glassWasActive = true; world.burn(at); },

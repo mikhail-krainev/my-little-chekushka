@@ -9,6 +9,7 @@ const DEFAULTS = Object.freeze({
   moveFolders: true,     // pushes folder icons around the desktop
   throwCursor: true,     // grabs the cursor and flings it away
   searchPrank: true,     // opens a search bar and tries to type «крутить собак онлайн»
+  fightCursor: true,     // sometimes boxes the cursor away when it comes over him
 });
 
 class Settings {

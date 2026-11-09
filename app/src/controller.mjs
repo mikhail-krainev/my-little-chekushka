@@ -21,7 +21,7 @@ const WALL_HIT_SPEED = 700;
 /** Floor actions announced as they start; smoking ones speak after the first drag instead (see #fireCues). */
 const SPOKEN_AT_START = new Set(['sit', 'sleep', 'stretch']);
 /** Actions done facing the working side. */
-const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah']);
+const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza']);
 /** How far (px) the mascot's front reaches over the edge of a folder window he peeks into. */
 const PEEK_OVERLAP = 34;
 /** Folder icons: half an icon (px) between the hands and the icon centre, push speed (px/s), push distance range,
@@ -39,6 +39,13 @@ const CURSOR_THROW_CHANCE = 0.6;
 const CURSOR_THROW_DELAY = { min: 2.5, max: 5 };
 const CURSOR_WINDUP = 0.35;
 const CURSOR_FLIGHT = 0.5;
+/** Cursor fight: chance per time the cursor comes over him, pause before the next one (s), push per punch (px),
+ *  how far the cursor may be (px from his box) and still get hit, and how long a push takes (s). */
+const FIGHT_CHANCE = 0.1;
+const FIGHT_COOLDOWN = 20;
+const FIGHT_PUSH = 34;
+const FIGHT_REACH = 160;
+const FIGHT_PUSH_TIME = 0.12;
 /** Chance per decision that the mascot starts a prank on his own (when its switch is on). */
 const PRANK_CHANCE = { moveFolders: 0.05, searchPrank: 0.03, throwCursor: 0.03 };
 
@@ -46,17 +53,19 @@ export class MascotController {
   /**
    * @param env.getScreen () => { work: {minX, minY, maxX, maxY} }  the usable screen area
    * @param env.getCursor () => {x, y}                               global cursor, y up
-   * @param env.overlay   { throwBottle(kind, origin, velocity), spit(origin, target), smoke(origin, opts), burn(at) }
+   * @param env.overlay   { throwBottle(kind, origin, velocity), toss(kind, origin, velocity), spit(origin, target),
+   *                      smoke(origin, opts), burn(at) }
    * @param env.clock     () => seconds
    * @param env.allows    (switchName) => boolean    peekFolders | moveFolders | throwCursor | searchPrank
    * @param env.listFolders () => Promise<[{ name, x, y }]>  desktop folder icons (centres, y up)
    * @param env.moveFolder  (name, {x, y}) => void           puts an icon centre there
    * @param env.throwCursor ({ to, duration }) => void       flings the system cursor to `to`
+   * @param env.nudgeCursor ({ dx, dy, duration }) => void   pushes the system cursor by (dx, dy), y up
    * @param env.overlay.search { open(rect), type(text), zap() }  the drawn search bar
    * `onEvent(name, { requested })` (optional) hears what happens to the mascot: pickedUp, thrown, hitWall, grabbedCursor,
    * wokenUp, and from floor actions sit, sleep, stretch, smoke, hookah, spit, drunk, vomit; `requested` is true when the
-   * user chose that action from the menu. Pranks always speak (requested): folderPeek, folderPush, cursorThrown,
-   * searchAngry.
+   * user chose that action from the menu. Food scenes: burger, pizza. Pranks always speak (requested): folderPeek,
+   * folderPush, cursorThrown, searchAngry, cursorFight.
    */
   constructor(env) {
     this.env = env;
@@ -68,6 +77,7 @@ export class MascotController {
     this.pendingPerformance = null;
     this.pendingScene = null;          // a prank to start where the current jump lands
     this.throwPlanned = false;         // the next cursor grab ends in a throw
+    this.fightAllowedAt = 0;           // no new cursor fight before this time
     this.cueIndex = 0;
     this.spitTarget = null;
     this.blendFrom = null;
@@ -129,6 +139,7 @@ export class MascotController {
   // MARK: Mouse (called by the app)
 
   hoverChanged(inside) {
+    if (inside && !this.isSleeping) { this.#maybeFight(); return; }
     if (!inside || !this.isSleeping) return;
     this.wakeAndStare();
     this.onEvent?.('wokenUp');
@@ -317,16 +328,19 @@ export class MascotController {
   #pickNext(b) {
     if (this.#maybePrank()) return;
     const t = this.now, roll = Math.floor(Math.random() * 100);
-    if (roll < 26) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 20, run: false };
-    else if (roll < 38) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 12, run: true };
-    else if (roll < 47) this.#schedule(Animator.makePerformance('sit', { side: this.dir }));
-    else if (roll < 55) this.#schedule(Animator.makePerformance('sleep', { side: this.dir }));
-    else if (roll < 63) this.#schedule(Animator.makePerformance('stretch', { side: this.dir }));
-    else if (roll < 70) this.#schedule(Animator.makePerformance('vodka', { side: this.dir }));
-    else if (roll < 77) this.#schedule(Animator.makePerformance('beer', { side: this.dir }));
-    else if (roll < 82) this.#schedule(Animator.makePerformance('spit', { side: this.dir }));
-    else if (roll < 87) this.#schedule(Animator.makePerformance('smoke', { side: this.dir }));
-    else if (roll < 91) this.#schedule(Animator.makePerformance('hookah', { side: this.dir }));
+    const act = (kind) => this.#schedule(Animator.makePerformance(kind, { side: this.dir }));
+    if (roll < 24) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 20, run: false };
+    else if (roll < 34) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 12, run: true };
+    else if (roll < 42) act('sit');
+    else if (roll < 49) act('sleep');
+    else if (roll < 56) act('stretch');
+    else if (roll < 62) act('vodka');
+    else if (roll < 68) act('beer');
+    else if (roll < 73) act('spit');
+    else if (roll < 78) act('smoke');
+    else if (roll < 82) act('hookah');
+    else if (roll < 87) act('burger');
+    else if (roll < 91) act('pizza');
     else if (roll < 95) this.#hop(b);
     else if (roll < 98) this.#jumpToCursor(b);
     else this.state = { type: 'idle', until: t + rand(1, 3) };
@@ -344,15 +358,16 @@ export class MascotController {
     const p = { ...perf };
     this.cueIndex = 0;
     if (p.kind === 'spit') this.#aimSpit(p);
-    if (p.kind === 'hookah') this.#roomForHookah(p);
+    if (p.kind === 'hookah') this.#roomBeside(p, 110);
+    if (p.kind === 'pizza') this.#roomBeside(p, 140);
     if (SIDED.has(p.kind)) this.facingRight = p.side > 0;
     this.state = { type: 'perform', perf: p, start: this.now };
     if (SPOKEN_AT_START.has(p.kind)) this.#announce(p, p.kind);
   }
 
-  /** The hookah stands beside the mascot: put it on the side with room on the screen. */
-  #roomForHookah(perf) {
-    const b = this.#bounds, centre = this.pos.x + SIZE.width / 2, need = 110;
+  /** The hookah / pizza box stands beside the mascot: put it on the side with `need` px of room on the screen. */
+  #roomBeside(perf, need) {
+    const b = this.#bounds, centre = this.pos.x + SIZE.width / 2;
     if (perf.side > 0 && centre + need > b.maxX) perf.side = -1;
     else if (perf.side < 0 && centre - need < b.minX) perf.side = 1;
   }
@@ -391,7 +406,8 @@ export class MascotController {
       switch (cue.type) {
         case 'throw': this.#throwBottle(perf, pose); break;
         case 'spit': this.#spit(pose); this.#announce(perf, 'spit'); break;
-        case 'vomit': case 'drunk': this.#announce(perf, cue.type); break;
+        case 'vomit': case 'drunk': case 'burger': case 'pizza': this.#announce(perf, cue.type); break;
+        case 'toss': this.#toss(perf, pose, cue.item); break;
         case 'exhale':
           if (this.cueIndex - 1 === list.findIndex((c) => c.type === 'exhale')) this.#announce(perf, perf.kind);   // first puff
           this.env.overlay.smoke(this.#spriteToScreen(mouthPoint(pose)), { size: cue.size, life: cue.life, drift: perf.side * (cue.drift ?? 1) });
@@ -420,6 +436,12 @@ export class MascotController {
     const mouth = mouthPoint(pose);
     this.env.overlay.spit(this.#spriteToScreen(mouth), this.spitTarget);
     this.spitTarget = null;
+  }
+
+  #toss(perf, pose, item) {
+    const hand = handPoint(pose, Side.fromSign(perf.side));
+    const velocity = { x: perf.side * rand(420, 560), y: rand(380, 520) };
+    this.env.overlay.toss?.(item, this.#spriteToScreen(hand), velocity);
   }
 
   #throwBottle(perf, pose) {
@@ -547,6 +569,7 @@ export class MascotController {
       case 'angry':
         if (el >= Stunts.ANGRY_DURATION) this.#endScene();
         return Stunts.angry(el, base);
+      case 'fight': return this.#stepFight(sc, el, base);
       default: throw new Error(`unknown scene: ${sc.kind}`);
     }
   }
@@ -630,6 +653,30 @@ export class MascotController {
   }
 
   // Cursor
+
+  /** The cursor just came over him: now and then he squares up and boxes it away. */
+  #maybeFight() {
+    if (!this.canBeInterrupted || this.#isBusyWithPrank || !this.#allows('fightCursor')) return;
+    if (this.now < this.fightAllowedAt || Math.random() >= FIGHT_CHANCE) return;
+    this.fightAllowedAt = this.now + FIGHT_COOLDOWN;
+    const m = this.env.getCursor();
+    this.pendingPerformance = null;
+    this.#beginScene({ kind: 'fight', dir: m.x >= this.pos.x + SIZE.width / 2 ? 1 : -1 });
+    this.#say('cursorFight');
+  }
+
+  /** Each punch that lands while the cursor is within reach knocks it a little further away. */
+  #stepFight(sc, el, base) {
+    sc.hits ??= 0;
+    while (sc.hits < Stunts.FIGHT_HITS.length && el >= Stunts.FIGHT_HITS[sc.hits]) {
+      sc.hits++;
+      const m = this.env.getCursor(), f = this.frame;
+      const near = m.x > f.x - FIGHT_REACH && m.x < f.x + f.w + FIGHT_REACH && m.y > f.y - FIGHT_REACH && m.y < f.y + f.h + FIGHT_REACH;
+      if (near) this.env.nudgeCursor?.({ dx: sc.dir * FIGHT_PUSH, dy: rand(-6, 10), duration: FIGHT_PUSH_TIME });
+    }
+    if (el >= Stunts.FIGHT_DURATION) this.#endScene();
+    return Stunts.fight(el, sc.dir, base);
+  }
 
   #windUp() {
     const m = this.env.getCursor(), w = this.env.getScreen().work;

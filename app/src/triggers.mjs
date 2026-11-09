@@ -11,7 +11,7 @@ export const TRIGGER_PHRASES = {
   fileDeleted: ['babok'],               // «Бабок, сука, больше нет. Блядь»
   massDelete: ['miliciya', 'policiya'], // «Суд! Милиция! Помогите!», «Пизда мне. Меня нашла полиция…»
   browserLaunched: ['stavki'],          // «Только ставки: футбол, хуйбол…»
-  messengerLaunched: ['detka'],         // «О да, у да, детка, ты такая сладкая конфетка»
+  messengerLaunched: ['ty_tut'],        // «Привет, ты тут? Я тут. Привет, спишь?»
   codeLaunched: ['kommentirovat', 'chto_delat'],   // «Я не знаю, как это комментировать», «Что, блядь, нужно делать?»
   appLaunched: ['bystree'],             // «Быстрее!»
   appQuit: ['pohuy'],                   // «Да похуй, ну и ладно»
@@ -31,18 +31,21 @@ export const TRIGGER_PHRASES = {
   smoke: ['zhestko'],                   // «Блядь, это жёстко!» after the first drag
   hookah: ['poebat'],                   // «…Мне как-то поебать вообще» after the first pull
   spit: ['korova'],                     // «Да пошла ты нахуй, блядь, корова ебаная!»
-  drunk: ['baba', 'baba_dyrka', 'fu', 'polnaya', 'baba_suka', 'ne_zhri'],   // after vodka or beer, kept down
+  drunk: ['baba', 'baba_dyrka', 'polnaya', 'baba_suka', 'ne_zhri'],   // after vodka or beer, kept down
+  burger: ['detka'],                    // bragging about the burger: «О да, у да, детка, ты такая сладкая конфетка»
+  pizza: ['fu', 'pochemu'],             // the plastic pizza: «Что это за хуйня, блядь? Фу, блядь»
   vomit: ['pizdec'],                    // «Да ну нахуй, да это пиздец!»
   // desktop pranks
   folderPeek: ['eto_on', 'o_blyat'],              // peeks into a folder window: «Это он, это реально он!», «О, блядь»
-  folderPush: ['specnaz', 'nu_voznya'],           // pushes a folder icon: «Работай, спецназ!», «Ну, пошла возня»
+  folderPush: ['nu_voznya'],                      // pushes a folder icon: «Ну, пошла возня»
+  cursorFight: ['specnaz'],                       // boxes the cursor: «Работай, спецназ! Работай, спецназ!»
   foldersReset: ['ne_volnuysya'],                 // folders put back: «Не волнуйся, маленький, всё будет хорошо»
   cursorThrown: ['pyos'],                         // flings the cursor: «Да иди ты нахуй, ты иди нахуй, пёс моя паршивая»
   searchAngry: ['zaebal', 'zhizn'],               // knocked off the search bar: «Заебал, урод ты заморский!»
   // now and then, to fill the silence
   chatter: [
-    'angel', 'palaich', 'klyuch', 'ty_tut', 'tualet', 'monitor', 'bandera', 'pantera', 'kashiki', 'parashyut',
-    'shut_master', 'kak_chlen', 'poroshki', 'pavlov', 'olivie', 'tiktoker', 'maks_summa', 'nastya', 'pochemu', 'degradaciya',
+    'angel', 'palaich', 'klyuch', 'tualet', 'monitor', 'bandera', 'pantera', 'kashiki', 'parashyut',
+    'shut_master', 'kak_chlen', 'poroshki', 'pavlov', 'olivie', 'tiktoker', 'maks_summa', 'nastya', 'degradaciya',
   ],
 };
 
@@ -53,7 +56,7 @@ export const COOLDOWNS = {
     'folderCreated', 'fileDownloaded', 'screenshot', 'fileCreated', 'fileDeleted', 'massDelete',
     'browserLaunched', 'messengerLaunched', 'codeLaunched', 'appLaunched', 'appQuit',
   ]) },
-  action: { seconds: 25, triggers: new Set(['sit', 'sleep', 'stretch', 'smoke', 'hookah', 'spit', 'drunk', 'vomit']) },
+  action: { seconds: 25, triggers: new Set(['sit', 'sleep', 'stretch', 'smoke', 'hookah', 'spit', 'drunk', 'vomit', 'burger', 'pizza']) },
 };
 
 // App names: macOS bundle names and Windows process names.

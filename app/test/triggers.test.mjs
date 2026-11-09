@@ -104,7 +104,7 @@ function simulate(setup) {
       clock: () => now,
       getScreen: () => ({ work: { minX: 0, minY: 0, maxX: 1600, maxY: 1000 } }),
       getCursor: () => ({ x: 0, y: 0 }),
-      overlay: { throwBottle() {}, spit() {}, smoke() {}, burn() {} },
+      overlay: { throwBottle() {}, toss() {}, spit() {}, smoke() {}, burn() {} },
     });
     controller.onEvent = (name, info = {}) => events.push({ name, at: now, requested: info.requested === true });
     controller.tick();
@@ -122,7 +122,7 @@ function simulate(setup) {
 
 const MENU_ACTIONS = {
   sit: ['sit'], sleep: ['sleep'], stretch: ['stretch'], smoke: ['smoke'], hookah: ['hookah'], spit: ['spit'],
-  vodka: ['drunk', 'vomit'], beer: ['drunk', 'vomit'],
+  vodka: ['drunk', 'vomit'], beer: ['drunk', 'vomit'], burger: ['burger'], pizza: ['pizza'],
 };
 
 test('every menu action speaks exactly once, marked as asked for by the user', async () => {
