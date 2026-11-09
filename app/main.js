@@ -1,6 +1,9 @@
 'use strict';
 const path = require('node:path');
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
+const { flingCursor } = require('./cursor');
+const { DesktopFolders, FolderWindowWatcher, createDesktopBackend } = require('./desktop');
+const { Settings } = require('./settings');
 const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
 
@@ -17,6 +20,17 @@ const ACTIONS = [
   { label: 'Покурить сигарету', kind: 'smoke' },
   { label: 'Покурить кальян', kind: 'hookah' },
   { label: 'Сказать фразу', kind: 'say' },
+  { label: 'Подвинуть папку', kind: 'pushFolder', setting: 'moveFolders' },
+  { label: 'Выкинуть курсор', kind: 'throwCursor', setting: 'throwCursor' },
+  { label: 'Крутить собак онлайн', kind: 'search', setting: 'searchPrank' },
+];
+
+/** Switches in the right-click and tray menus. */
+const SWITCHES = [
+  { label: 'Заглядывать в открытые папки', setting: 'peekFolders' },
+  { label: 'Двигать папки на рабочем столе', setting: 'moveFolders' },
+  { label: 'Выкидывать курсор', setting: 'throwCursor' },
+  { label: 'Искать «крутить собак онлайн»', setting: 'searchPrank' },
 ];
 
 let win = null;
@@ -24,6 +38,10 @@ let tray = null;
 let watcher = null;
 let cursorTimer = null;
 let currentDisplay = null;
+let settings = null;
+let desktop = null;              // platform backend from desktop.js, null where unsupported
+let folderWindows = null;
+let desktopFolders = null;
 
 function screenshotsDir() {
   const i = process.argv.indexOf('--screenshots');
@@ -37,12 +55,23 @@ if (!screenshotsDir() && !app.requestSingleInstanceLock()) {
   app.quit();
 }
 
-/** Developer aid: `--demo vodka|beer|sit|sleep|stretch|spit|smoke|hookah|say` starts that action right after launch. */
+/** Developer aid: `--demo <kind>` (any kind from ACTIONS, e.g. smoke, search, pushFolder) starts that action after launch. */
 function demoKind() {
   const i = process.argv.indexOf('--demo');
   const kind = i > 0 ? process.argv[i + 1] : null;
   return ACTIONS.some((a) => a.kind === kind) ? kind : null;
 }
+
+// MARK: Coordinates. The renderer works in the display's own space with y up; the OS uses global DIP with y down.
+
+const toLayer = (p) => {
+  const b = currentDisplay.bounds;
+  return { x: p.x - b.x, y: b.height - (p.y - b.y) };
+};
+const fromLayer = (p) => {
+  const b = currentDisplay.bounds;
+  return { x: p.x + b.x, y: b.y + b.height - p.y };
+};
 
 /** Everything the renderer needs to lay out the layer, in the window's own y-down DIP coordinates. */
 function screenInfo(display) {
@@ -96,21 +125,112 @@ function relayoutOnDisplayChange() {
   screen.on('display-removed', update);
 }
 
+// MARK: Menus
+
+const sendTrigger = (kind) => win?.webContents.send('trigger', kind);
+
+function setSwitch(name, value) {
+  settings.set(name, value);
+  win?.webContents.send('settings', settings.all());
+  rebuildTrayMenu();
+}
+
+async function resetFolders() {
+  try {
+    const count = await desktopFolders.reset();
+    if (count > 0) sendTrigger('foldersReset');
+  } catch (err) {
+    console.error('folder reset failed:', err.message);
+  }
+  rebuildTrayMenu();
+}
+
+/** The same menu on right-clicking the mascot and in the tray: switches, folder reset, actions, exit. */
+function menuTemplate() {
+  const canMoveFolders = Boolean(desktopFolders);
+  return [
+    ...SWITCHES.filter((s) => s.setting !== 'moveFolders' || canMoveFolders).map((s) => ({
+      label: s.label, type: 'checkbox', checked: settings.get(s.setting), click: (item) => setSwitch(s.setting, item.checked),
+    })),
+    { label: 'Вернуть папки на место', enabled: canMoveFolders && desktopFolders.hasMoved, click: resetFolders },
+    { type: 'separator' },
+    {
+      label: 'Действия',
+      submenu: ACTIONS.filter((a) => a.kind !== 'pushFolder' || canMoveFolders).map((a) => ({
+        label: a.label, enabled: !a.setting || settings.get(a.setting), click: () => sendTrigger(a.kind),
+      })),
+    },
+    { type: 'separator' },
+    { label: 'Выход', click: () => app.quit() },
+  ];
+}
+
+function rebuildTrayMenu() {
+  tray?.setContextMenu(Menu.buildFromTemplate(menuTemplate()));
+}
+
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png')).resize({ width: TRAY_SIZE, height: TRAY_SIZE });
   tray = new Tray(icon);
   tray.setToolTip('Чекушка');
-  const menu = Menu.buildFromTemplate([
-    ...ACTIONS.map((a) => ({ label: a.label, click: () => win?.webContents.send('trigger', a.kind) })),
-    { type: 'separator' },
-    { label: 'Выход', click: () => app.quit() },
-  ]);
-  tray.setContextMenu(menu);
+  rebuildTrayMenu();
+}
+
+// MARK: Desktop pranks
+
+function startDesktop() {
+  desktop = createDesktopBackend({ screen, desktopDir: app.getPath('desktop') });
+  if (!desktop) return;
+  desktopFolders = new DesktopFolders(desktop, app.getPath('userData'));
+  folderWindows = new FolderWindowWatcher(desktop, (rect) => {
+    if (!win || !settings.get('peekFolders')) return;
+    const b = currentDisplay.bounds;
+    const visible = rect.x < b.x + b.width && rect.x + rect.width > b.x && rect.y < b.y + b.height && rect.y + rect.height > b.y;
+    if (!visible) return;
+    const topLeft = toLayer({ x: rect.x, y: rect.y });
+    win.webContents.send('folder-opened', { x: topLeft.x, y: topLeft.y - rect.height, width: rect.width, height: rect.height });
+  });
+  folderWindows.start();
+}
+
+async function listFolders() {
+  if (!desktopFolders || !settings.get('moveFolders')) return [];
+  try {
+    return (await desktopFolders.list()).map((f) => ({ name: f.name, ...toLayer(f) }));
+  } catch (err) {
+    console.error('desktop folders:', err.message);
+    return [];
+  }
+}
+
+function moveFolder(name, point) {
+  if (!desktopFolders || !settings.get('moveFolders') || typeof name !== 'string') return;
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return;
+  const p = fromLayer(point);
+  const hadMoved = desktopFolders.hasMoved;
+  desktopFolders.move(name, p.x, p.y)
+    .then(() => { if (desktopFolders.hasMoved !== hadMoved) rebuildTrayMenu(); })
+    .catch((err) => console.error(`moving folder "${name}" failed:`, err.message));
+}
+
+function throwCursor(request) {
+  if (!settings.get('throwCursor') || !Number.isFinite(request?.to?.x) || !Number.isFinite(request?.to?.y)) return;
+  const b = currentDisplay.bounds;
+  const to = fromLayer(request.to);
+  const target = { x: Math.min(Math.max(to.x, b.x + 2), b.x + b.width - 2), y: Math.min(Math.max(to.y, b.y + 2), b.y + b.height - 2) };
+  const duration = Math.min(Math.max(Number(request.duration) || 0.5, 0.1), 2);
+  flingCursor(screen, { from: screen.getCursorScreenPoint(), to: target, duration, lift: 160 })
+    .catch((err) => console.error('throwing the cursor failed:', err.message));
 }
 
 ipcMain.handle('screen:get', () => screenInfo(currentDisplay));
 ipcMain.on('mouse:ignore', (_e, ignore) => win?.setIgnoreMouseEvents(ignore));
 ipcMain.on('app:error', (_e, message) => console.error(message));
+ipcMain.handle('settings:get', () => settings.all());
+ipcMain.on('menu:show', () => win && Menu.buildFromTemplate(menuTemplate()).popup({ window: win }));
+ipcMain.handle('folders:list', () => listFolders());
+ipcMain.on('folders:move', (_e, name, point) => moveFolder(name, point));
+ipcMain.on('cursor:throw', (_e, request) => throwCursor(request));
 
 app.whenReady().then(async () => {
   const shotsDir = screenshotsDir();
@@ -126,7 +246,9 @@ app.whenReady().then(async () => {
   }
   if (process.platform === 'darwin') app.dock?.hide();      // menu-bar only, no Dock icon
   currentDisplay = screen.getPrimaryDisplay();
+  settings = new Settings(app.getPath('userData'));
   createWindow(currentDisplay);
+  startDesktop();
   createTray();
   startCursorFeed();
   relayoutOnDisplayChange();
@@ -136,4 +258,9 @@ app.whenReady().then(async () => {
 
 app.on('second-instance', () => win?.showInactive());
 app.on('window-all-closed', () => { if (!screenshotsDir()) app.quit(); });
-app.on('before-quit', () => { watcher?.stop(); clearInterval(cursorTimer); });
+app.on('before-quit', () => {
+  watcher?.stop();
+  folderWindows?.stop();
+  desktop?.dispose();
+  clearInterval(cursorTimer);
+});

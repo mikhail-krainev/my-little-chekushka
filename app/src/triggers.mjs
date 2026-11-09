@@ -9,21 +9,21 @@ export const TRIGGER_PHRASES = {
   screenshot: ['normaldy'],             // «Ха-ха-ха! Это пизда! И ведь нормалды!»
   fileCreated: ['nihuya'],              // «Нихуя себе. И вправду потужненько»
   fileDeleted: ['babok'],               // «Бабок, сука, больше нет. Блядь»
-  massDelete: ['miliciya'],             // «Суд! Милиция! Помогите!»
+  massDelete: ['miliciya', 'policiya'], // «Суд! Милиция! Помогите!», «Пизда мне. Меня нашла полиция…»
   browserLaunched: ['stavki'],          // «Только ставки: футбол, хуйбол…»
   messengerLaunched: ['detka'],         // «О да, у да, детка, ты такая сладкая конфетка»
-  codeLaunched: ['kommentirovat'],      // «Я не знаю, как это комментировать, блядь»
+  codeLaunched: ['kommentirovat', 'chto_delat'],   // «Я не знаю, как это комментировать», «Что, блядь, нужно делать?»
   appLaunched: ['bystree'],             // «Быстрее!»
   appQuit: ['pohuy'],                   // «Да похуй, ну и ладно»
-  userBack: ['zhivoy'],                 // «Живой»: the mouse moves again after a long pause
-  appStart: ['privet'],                 // «Привет, дорогие зрители и подписчики…»
+  userBack: ['zhivoy', 'normalno', 'zhirny'],     // «Живой», «Нормально всё?», «Здорово, жирный!»: after a long pause
+  appStart: ['privet', 'rebyata'],      // «Привет, дорогие зрители и подписчики…», «Ребята, ребята, всем привет!»
   // what the user does to the mascot
   pickedUp: ['no'],                     // «НО!»
-  thrown: ['pyos'],                     // «Да иди ты нахуй… пёс моя паршивая»
+  thrown: ['aaa'],                      // «А! А! А! Бля!»
   hitWall: ['ne_govori'],               // «Не говори таких слов при мне, блядь»
-  grabbedCursor: ['tancuem'],           // «Танцуем все! О да!»
+  grabbedCursor: ['tancuem', 'druzhit', 'dai_ego'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его, блядь!»
   wokenUp: ['molchat'],                 // «Молчать, блядь»
-  clickSpam: ['eblan'],                 // «Блин, ты чё, еблан?»
+  clickSpam: ['eblan', 'klik'],         // «Блин, ты чё, еблан?», «…вам это один ебаный клик»
   // the mascot's own floor actions
   sit: ['dura'],                        // «Сядь, дура толстая!»
   sleep: ['bayu'],                      // «Ох, баёшечки, баёшечки…»
@@ -31,10 +31,19 @@ export const TRIGGER_PHRASES = {
   smoke: ['zhestko'],                   // «Блядь, это жёстко!» after the first drag
   hookah: ['poebat'],                   // «…Мне как-то поебать вообще» after the first pull
   spit: ['korova'],                     // «Да пошла ты нахуй, блядь, корова ебаная!»
-  drunk: ['baba', 'baba_dyrka', 'fu', 'polnaya'],   // after vodka or beer, kept down
+  drunk: ['baba', 'baba_dyrka', 'fu', 'polnaya', 'baba_suka', 'ne_zhri'],   // after vodka or beer, kept down
   vomit: ['pizdec'],                    // «Да ну нахуй, да это пиздец!»
+  // desktop pranks
+  folderPeek: ['eto_on', 'o_blyat'],              // peeks into a folder window: «Это он, это реально он!», «О, блядь»
+  folderPush: ['specnaz', 'nu_voznya'],           // pushes a folder icon: «Работай, спецназ!», «Ну, пошла возня»
+  foldersReset: ['ne_volnuysya'],                 // folders put back: «Не волнуйся, маленький, всё будет хорошо»
+  cursorThrown: ['pyos'],                         // flings the cursor: «Да иди ты нахуй, ты иди нахуй, пёс моя паршивая»
+  searchAngry: ['zaebal', 'zhizn'],               // knocked off the search bar: «Заебал, урод ты заморский!»
   // now and then, to fill the silence
-  chatter: ['angel', 'palaich', 'klyuch', 'ty_tut', 'tualet', 'monitor'],
+  chatter: [
+    'angel', 'palaich', 'klyuch', 'ty_tut', 'tualet', 'monitor', 'bandera', 'pantera', 'kashiki', 'parashyut',
+    'shut_master', 'kak_chlen', 'poroshki', 'pavlov', 'olivie', 'tiktoker', 'maks_summa', 'nastya', 'pochemu', 'degradaciya',
+  ],
 };
 
 /** Triggers held back by a cooldown (seconds since the last phrase of the same group): a burst of files, or the

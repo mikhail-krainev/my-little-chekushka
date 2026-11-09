@@ -33,6 +33,9 @@
       "preload.js",
       "stationary.js",
       "watcher.js",
+      "settings.js",
+      "desktop.js",
+      "cursor.js",
       "screenshots.js",
       "src/**/*",
       "assets/**/*",
@@ -44,7 +47,8 @@
         "pkg"
       ],
       "extendInfo": {
-        "LSUIElement": true
+        "LSUIElement": true,
+        "NSAppleEventsUsageDescription": "Чекушка двигает папки на рабочем столе через Finder и возвращает их на место."
       },
       "icon": "build/icon.icns"
     },

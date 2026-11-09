@@ -5,6 +5,7 @@ import { MascotController } from './controller.mjs';
 import { describeEvent } from './events.mjs';
 import { Config } from './geometry.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
+import { SearchBar } from './searchbar.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { PhrasePlayer, ShuffleBag } from './talk.mjs';
 import { BurstCounter, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent } from './triggers.mjs';
@@ -44,6 +45,8 @@ let smokeWasActive = false;
 let dirty = [];                    // rects (y down) painted on the mascot layer last frame
 
 const bubble = new Bubble(clock);
+const searchBar = new SearchBar();
+let settings = {};                  // prank switches from the main process (settings.js)
 const phrases = new PhrasePlayer(clock, '../assets/phrases');
 let phraseBag = new ShuffleBag([]);
 const triggerGate = new TriggerGate();
@@ -180,6 +183,12 @@ function drawMascotLayer() {
   const rect = bubble.draw(mainCtx, { width, height, work: screen.work });
   mainCtx.restore();
   if (rect) dirty.push({ x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 });
+
+  mainCtx.save();
+  mainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const barRect = searchBar.draw(mainCtx, height, clock());
+  mainCtx.restore();
+  if (barRect) dirty.push(barRect);
 }
 
 function drawGlassLayer() {
@@ -229,6 +238,7 @@ async function start() {
   const clips = await phrases.load();
   phraseBag = new ShuffleBag(clips);
   triggerBags = bagsByTrigger(clips);
+  settings = await api.getSettings();
   const info = await api.getScreen();
   applyScreen(info);
   cursor = info.cursor;
@@ -236,7 +246,16 @@ async function start() {
     clock,
     getScreen: () => screen,
     getCursor: () => cursor,
+    allows: (name) => settings[name] === true,
+    listFolders: () => api.listFolders(),
+    moveFolder: (name, point) => api.moveFolder(name, point),
+    throwCursor: (request) => api.throwCursor(request),
     overlay: {
+      search: {
+        open: (rect) => searchBar.open(rect, clock()),
+        type: (text) => searchBar.setText(text, clock()),
+        zap: () => searchBar.zap(clock()),
+      },
       throwBottle: (kind, origin, velocity) => { glassWasActive = true; world.throwBottle(kind, origin, velocity); },
       spit: (origin, target) => { glassWasActive = true; world.launchSpit(origin, target); },
       smoke: (origin, opts) => { glassWasActive = true; world.puffSmoke(origin, opts); },
@@ -252,7 +271,17 @@ async function start() {
   });
   api.onScreen((next) => { applyScreen(next); controller.pos = { ...controller.pos }; });
   api.onSystemEvent(onSystemEvent);
-  api.onTrigger((kind) => (kind === 'say' ? sayRandom() : controller.trigger(kind)));
+  api.onTrigger((kind) => {
+    if (kind === 'say') sayRandom();
+    else if (kind === 'foldersReset') sayFor('foldersReset', { requested: true });
+    else controller.trigger(kind);
+  });
+  api.onSettings((next) => { settings = next; });
+  api.onFolderOpened((rect) => controller.peekInto(rect));
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (inside(controller.frame, cursor)) api.showMenu();
+  });
   window.addEventListener('mousedown', (e) => {
     if (e.button !== 0 || !inside(controller.frame, cursor)) return;
     mouse.down = true; mouse.dragging = false; mouse.start = { ...cursor };

@@ -1,10 +1,11 @@
 // Developer / documentation tool: renders pose sheets and broken-glass strips to a canvas (used for the README screenshots).
-// `sheet.html?set=poses|drinks|spit|smoke|hookah|phrases|glass` draws one sheet and sets `window.__sheetSize` when it is done.
+// `sheet.html?set=poses|drinks|spit|smoke|hookah|pranks|phrases|glass` draws one sheet and sets `window.__sheetSize` when it is done.
 import * as A from './animator.mjs';
 import { Config, rgb } from './geometry.mjs';
 import { newFace } from './pose.mjs';
 import { beginYUp, drawMascot, emberPoint, loadSprites, mouthPoint } from './renderer.mjs';
 import { HOOKAH, SMOKE } from './smoking.mjs';
+import * as S from './stunts.mjs';
 import { ShatterWorld } from './shatter.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
 import { PhrasePlayer, faceFrame } from './talk.mjs';
@@ -74,6 +75,16 @@ function poses(set) {
         scene(p, 'hookah: get up', T.standEnd + 0.1),
       ];
     }
+    case 'pranks': return [
+      ['peek: lean in', S.peek(S.PEEK_STARTLE - 0.15, 1, base)],
+      ['peek: startled', S.peek(S.PEEK_STARTLE + 0.25, 1, base)],
+      ['push folder', S.push(0.8, 1, base)],
+      ['search: open', S.typing(0.3, 1, base)],
+      ['search: typing', S.typing(1.5, 1, base)],
+      ['angry', S.angry(0.9, base)],
+      ['angry', S.angry(1.3, base)],
+      ['cursor: wind up', A.hanging(0, S.windupSwing(1, 1), base)],
+    ];
     case 'spit': {
       const p = perf('spit');
       return [0.3, 0.7, 1.1, 1.7, 2.0, A.SPIT_RELEASE + 0.1, 2.5, 2.9].map((t) => [`spit ${t}`, A.performance(p, t, base)]);

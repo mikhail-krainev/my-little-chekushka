@@ -68,6 +68,39 @@ CLIPS = [
     ("tualet", "7696931678517775624", 5.85, 7.80, "Мы не умрём в туалете. Мы не умрём."),
     ("monitor", "7697745490028350728", 2.85, 7.75, "Каждый день хочется разбить монитор, хочется послать всех нахуй."),
     ("privet", "7661033703174393106", 0.15, 8.85, "Привет, дорогие зрители и подписчики этого канала! С вами Меллстрой, и мы продолжаем азартные приключения."),
+    # second batch
+    ("o_blyat", "7561760721915268359", 0.00, 1.60, "О, блядь."),
+    ("rebyata", "7663601619233246482", 0.00, 7.90, "Ребята, ребята, всем привет! С вами блогер Меллстрой, мы играем вместе… А ладно, всё, похуй на меня, я понял."),
+    ("bandera", "7671969087269981447", 0.00, 7.36, "Бандера? Так я же его знаю, нахуй. Это же этот ютубер, блядь. Вот он, Майнкрафт снимал, блядь, вот он."),
+    ("zhirny", "7674258571969694994", 0.00, 5.44, "Здорово, жирный! Спасибо большое за комплименты, Альберт. Несмотря даже на эти оскорбления, я всё равно рад тебя видеть."),
+    ("aaa", "7676259865311857927", 0.00, 3.20, "А! А! А! Бля! А! Бля!"),
+    ("pantera", "7677008468938722567", 0.00, 7.96, "Танцуй, пантера. Да я не ебу, я не понял вообще… Какая-то нахуй пантера, хуй пойми, что это вообще такое, блядь."),
+    ("baba_suka", "7682037836119330055", 0.00, 5.24, "Писю, писю… Баба, блядь, баба, сука! Сука ты, а не баба."),
+    ("zhizn", "7685370294600617234", 0.00, 6.96, "Бля, ёбаная жизнь, чтоб ты, сука, сдохла нахуй. Нахуй ты мне такие испытания даёшь?"),
+    ("kashiki", "7686092345682545938", 0.00, 6.48, "Аааа, Мастерай, это ты? А я въебал в кашики нахуй."),
+    ("ne_zhri", "7686154213922983175", 0.00, 3.28, "Бля, только, пожалуйста, не жри как не в себя, сука."),
+    ("specnaz", "7686386775371042066", 0.00, 2.60, "Работай, спецназ! Работай, спецназ!"),
+    ("parashyut", "7688668972325080327", 0.00, 3.78, "Прыгнуть с парашютом? На залупе я могу прыгнуть!"),
+    ("eto_on", "7689805512803618055", 0.00, 6.08, "Это он, это он, это реально он! Это реально он! Быстрее!"),
+    ("shut_master", "7689938656353635591", 0.00, 4.90, "Шут-мастер, шут-мастер, шут-мастер."),
+    ("kak_chlen", "7690232061428403474", 0.00, 6.44, "Андрей, как ваш член? Спасибо, хорошо."),
+    ("poroshki", "7690540811456466184", 0.00, 6.28, "Лучше этих порошков подрочить и кончить нахуй на мыло. Зубную пасту, нахуй, блядь. Какую-нибудь тёлку."),
+    ("pavlov", "7691387895659252998", 0.00, 7.12, "Здравствуйте, Андрей! Я Павлов Алексей Алексеевич. Рад знакомству. Взаимно."),
+    ("policiya", "7691680120347708690", 0.00, 8.50, "Пизда мне. Меня нашла полиция по запросу Украины у этих казахстанцев, и мне пизда."),
+    ("chto_delat", "7693206941119679762", 0.00, 5.06, "Что, блядь, нужно делать, нахуй? Ты просто реально расскажи."),
+    ("olivie", "7694293386529983751", 0.00, 2.98, "Баба, где то оливье, которое мне нравилось? Где то оливье, которое мне нравилось?"),
+    ("tiktoker", "7694671352086793480", 0.00, 2.74, "Меллстрой? Чё? Тиктокер ты мой, друг."),
+    ("druzhit", "7695472803679603975", 0.00, 5.52, "Дружить не хочешь? О, хочешь, блядь! Подожди, нахуй, найс, найс!"),
+    ("zaebal", "7695871102471490837", 0.00, 4.98, "Ну да, пиздец, блядь, давай, нахуй, выдай, блядь. Заебал, урод ты, блядь, заморский!"),
+    ("nu_voznya", "7696912859778796818", 0.00, 1.30, "Ну, пошла возня."),
+    ("maks_summa", "7697315108321496336", 0.00, 9.34, "Блядь, вы достигли максимальной суммы, которую можно получить. Ебать. Да ну нахуй."),
+    ("dai_ego", "7701042671787199751", 0.00, 5.24, "Бля, дай его, дай его, блядь, говорю! Сука, дай его, нахуй, я сказал!"),
+    ("ne_volnuysya", "7701349717581516039", 0.00, 4.32, "Не волнуйся, маленький, всё будет хорошо."),
+    ("nastya", "7701380066571422984", 0.00, 6.56, "Я хочу сделать комплимент Насте. У неё пизда красивая. Да, похоже на персик."),
+    ("pochemu", "7701684537989827858", 0.00, 5.16, "Почему ты, блядь, ну, типа… Ну нет, я…"),
+    ("klik", "7701762046991338759", 0.00, 7.24, "Я реально прошу вас: вам это один ебаный клик, а я сломал колени."),
+    ("degradaciya", "7705091110380653832", 0.00, 2.62, "Седьмая стадия деградации: когнитивный спад."),
+    ("normalno", "7705502034677583111", 0.00, 1.00, "Нормально всё?"),
 ]
 
 
@@ -147,6 +180,26 @@ def head_box(frame, alpha, detectors):
     span = row[-1] - row[0] if len(row) else 0
     width = span if w * 0.95 <= span <= w * 1.35 else w * 1.12   # head width at the cheeks; hands make it unusable
     return np.array([cx, top, y + h * 1.06, width])
+
+
+def whole_video_head(path, detectors, step_seconds=0.25):
+    """Median head box over the whole video, for a phrase in which the face itself is never detected."""
+    cap = cv2.VideoCapture(path)
+    step = max(1, int(round(cap.get(cv2.CAP_PROP_FPS) * step_seconds)))
+    boxes, index = [], 0
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        if index % step == 0:
+            box = head_box(frame, key_green(frame)[1], detectors)
+            if box is not None:
+                boxes.append(box)
+        index += 1
+    cap.release()
+    if not boxes:
+        raise SystemExit("no face found anywhere in the video")
+    return np.median(np.array(boxes), axis=0)
 
 
 def smooth_boxes(boxes):
@@ -241,7 +294,10 @@ def build_clip(footage_dir, out_dir, head, mean, std, detectors, clip):
     key, vid, start, end, text = clip
     video = os.path.join(footage_dir, f"TikVideo.App_{vid}-hd.mp4")
     frames = read_frames(video, start, end)
-    boxes = smooth_boxes([head_box(f, key_green(f)[1], detectors) for f in frames])
+    found = [head_box(f, key_green(f)[1], detectors) for f in frames]
+    if all(b is None for b in found):
+        found[0] = whole_video_head(video, detectors)    # face turned away in the phrase: use where it sits elsewhere
+    boxes = smooth_boxes(found)
     cuts = [cut_face(f, b, FACE_W, FACE_H) for f, b in zip(frames, boxes)]
     colours = match_colours([c for c, _ in cuts], [m for _, m in cuts], mean, std)
     rgba = [fit_silhouette(c, m, head) for c, (_, m) in zip(colours, cuts)]
@@ -258,7 +314,12 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     detectors = load_detectors()
     head, mean, std = mascot_head(os.path.join(app_dir, "assets", "sprites", "body.png"))
-    table = [build_clip(footage_dir, out_dir, head, mean, std, detectors, c) for c in CLIPS]
+    table = []
+    for clip in CLIPS:
+        try:
+            table.append(build_clip(footage_dir, out_dir, head, mean, std, detectors, clip))
+        except SystemExit as err:            # one bad clip (no face, missing file) must not lose the rest
+            print(f"SKIPPED {clip[0]}: {err}", file=sys.stderr)
     for t in table:
         print(f"{t['key']:8s} {t['frames']:3d} frames  {t['text']}")
     module = (
