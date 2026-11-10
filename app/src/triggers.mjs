@@ -18,7 +18,8 @@ export const TRIGGER_PHRASES = {
   userBack: ['zhivoy', 'normalno', 'zhirny'],     // «Живой», «Нормально всё?», «Здорово, жирный!»: after a long pause
   appStart: ['privet', 'rebyata'],      // «Привет, дорогие зрители и подписчики…», «Ребята, ребята, всем привет!»
   // what the user does to the mascot
-  pickedUp: ['no', 'zaebal', 'eblan', 'ne_govori'], // «НО!»
+  pickedUp: ['aaa'],                    // «НО!» is reserved for later complaints; pickup starts with a scream.
+  dragComplaint: ['no', 'zaebal', 'eblan', 'ne_govori'],
   thrown: ['aaa'],                      // «А! А! А! Бля!»
   hitWall: ['ne_govori'],               // «Не говори таких слов при мне, блядь»
   grabbedCursor: ['tancuem', 'druzhit', 'dai_ego'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его, блядь!»

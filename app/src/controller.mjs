@@ -175,7 +175,7 @@ export class MascotController {
     if (this.state.type === 'scene' && this.state.scene.kind === 'search') this.env.overlay.search?.zap();
     this.pendingPerformance = null;
     this.pendingScene = null;
-    this.state = { type: 'dragged', start: this.now, protestAt: this.now + 0.25, wobble: { x: 0, y: 0 } };
+    this.state = { type: 'dragged', start: this.now, protestAt: this.now + rand(3, 5), wobble: { x: 0, y: 0 } };
     this.#sound('grab');
     this.onEvent?.('pickedUp');
   }
@@ -275,9 +275,8 @@ export class MascotController {
         break;
       case 'dragged': {
         const elapsed = t - st.start;
-        if (t >= st.protestAt) {
-          st.protestAt = t + 0.25;
-          this.onEvent?.('pickedUp', { repeat: true });
+        if (t >= st.protestAt && this.onEvent?.('dragComplaint', { repeat: true }) !== false) {
+          st.protestAt = t + rand(3, 5);
         }
         const offset = { x: 14 * Math.sin(elapsed * 15), y: 5 * Math.sin(elapsed * 19) };
         if (dt > 0) this.env.wobbleCursor?.({ dx: offset.x - st.wobble.x, dy: offset.y - st.wobble.y });

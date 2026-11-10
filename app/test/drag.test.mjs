@@ -23,8 +23,7 @@ test('carrying the mascot protests, rocks the cursor both ways and stops on rele
   assert.ok(wobble.some((p) => p.dx > 0));
   assert.ok(wobble.some((p) => p.dx < 0));
   assert.ok(wobble.every((p) => Math.abs(p.dx) <= 6 && Math.abs(p.dy) <= 6));
-  assert.ok(events.length > 1);
-  assert.ok(events.every((name) => name === 'pickedUp'));
+  assert.deepEqual(events, ['pickedUp'], 'only the scream during the first two seconds');
   assert.ok(Math.abs(c.pose.tilt) > 0.1);
   c.dragEnded({ x: 0, y: 0 });
   const count = wobble.length;
@@ -33,8 +32,9 @@ test('carrying the mascot protests, rocks the cursor both ways and stops on rele
 });
 
 test('pickup interrupts speech and chooses complaints from the shared pool', () => {
-  assert.ok(TRIGGER_PHRASES.pickedUp.includes('zaebal'));
-  assert.ok(TRIGGER_PHRASES.pickedUp.includes('eblan'));
+  assert.deepEqual(TRIGGER_PHRASES.pickedUp, ['aaa']);
+  assert.ok(TRIGGER_PHRASES.dragComplaint.includes('zaebal'));
+  assert.ok(TRIGGER_PHRASES.dragComplaint.includes('eblan'));
   assert.ok(new TriggerGate().allow('pickedUp', 0, true));
 });
 
@@ -100,12 +100,16 @@ test('a folder lookup finishing after release cannot start a stale chase', async
 test('complaints keep coming while held, including at rest, and stop on release', () => {
   const { c, step } = setup();
   const requests = [];
-  c.onEvent = (name, options) => requests.push({ name, options });
+  c.onEvent = (name, options) => requests.push({ name, options, at: c.now });
   c.dragBegan({ x: 820, y: 100 });
   for (let i = 0; i < 900; i++) step();
   const repeats = requests.filter((r) => r.options?.repeat);
-  assert.ok(repeats.length >= 30, 'keeps asking for a complaint throughout a long hold');
-  assert.ok(repeats.every((r) => r.name === 'pickedUp'));
+  assert.ok(repeats.length >= 2 && repeats.length <= 4);
+  assert.ok(repeats.every((r) => r.name === 'dragComplaint'));
+  for (let i = 1; i < requests.length; i++) {
+    const gap = requests[i].at - requests[i - 1].at;
+    assert.ok(gap >= 3 && gap <= 5 + 1 / 60, `gap ${gap}`);
+  }
   c.dragEnded({ x: 0, y: 0 });
   const count = requests.length;
   for (let i = 0; i < 10; i++) step();
@@ -152,4 +156,26 @@ test('replacing a live folder payload with a file ends the chase immediately', (
   payload = { changeCount: 2, isFolder: false };
   tracker.update({ x: 30, y: 40 }, true);
   assert.deepEqual(events, [{ x: 10, y: 20 }, null]);
+});
+
+
+test('a delayed complaint waits for speech to finish, then starts a fresh 3–5 second interval', () => {
+  const { c, step } = setup();
+  const accepted = [];
+  let busyUntil = 0;
+  c.onEvent = (name) => {
+    if (name === 'pickedUp') { busyUntil = c.now + 3.2; return true; }
+    if (name !== 'dragComplaint' || c.now < busyUntil) return false;
+    accepted.push(c.now);
+    busyUntil = c.now + 4.98;
+    return true;
+  };
+  c.dragBegan({ x: 820, y: 100 });
+  for (let i = 0; i < 1800; i++) step();
+  assert.ok(accepted.length >= 5);
+  assert.ok(accepted[0] >= 3.2 && accepted[0] <= 5 + 1 / 60);
+  for (let i = 1; i < accepted.length; i++) {
+    const gap = accepted[i] - accepted[i - 1];
+    assert.ok(gap >= 4.98 && gap <= 5 + 1 / 60, `no clipping or long silence: ${gap}`);
+  }
 });
