@@ -99,11 +99,11 @@ const sayRandom = () => say(phraseBag.next());
 
 /** A phrase that belongs to `trigger`, unless the mascot is talking or its group spoke just now. An action the user
  *  chose from the menu (`requested`) always speaks, cutting off whatever was being said. */
-function sayFor(trigger, { requested = false } = {}) {
+function sayFor(trigger, { requested = false, repeat = false } = {}) {
   const bag = triggerBags[trigger];
   if (!bag) return;
   if (requested) { triggerGate.force(trigger, clock()); say(bag.next()); return; }
-  if (triggerGate.allow(trigger, clock(), phrases.isTalking)) say(bag.next());
+  if (triggerGate.allow(trigger, clock(), phrases.isTalking, { repeat })) say(bag.next());
 }
 
 function onClick() {

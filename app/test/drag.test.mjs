@@ -23,7 +23,8 @@ test('carrying the mascot protests, rocks the cursor both ways and stops on rele
   assert.ok(wobble.some((p) => p.dx > 0));
   assert.ok(wobble.some((p) => p.dx < 0));
   assert.ok(wobble.every((p) => Math.abs(p.dx) <= 6 && Math.abs(p.dy) <= 6));
-  assert.deepEqual(events, ['pickedUp']);
+  assert.ok(events.length > 1);
+  assert.ok(events.every((name) => name === 'pickedUp'));
   assert.ok(Math.abs(c.pose.tilt) > 0.1);
   c.dragEnded({ x: 0, y: 0 });
   const count = wobble.length;
@@ -94,4 +95,61 @@ test('a folder lookup finishing after release cannot start a stale chase', async
   await Promise.resolve();
   tracker.update({ x: 300, y: 200 }, false);
   assert.deepEqual(events, []);
+});
+
+test('complaints keep coming while held, including at rest, and stop on release', () => {
+  const { c, step } = setup();
+  const requests = [];
+  c.onEvent = (name, options) => requests.push({ name, options });
+  c.dragBegan({ x: 820, y: 100 });
+  for (let i = 0; i < 900; i++) step();
+  const repeats = requests.filter((r) => r.options?.repeat);
+  assert.ok(repeats.length >= 30, 'keeps asking for a complaint throughout a long hold');
+  assert.ok(repeats.every((r) => r.name === 'pickedUp'));
+  c.dragEnded({ x: 0, y: 0 });
+  const count = requests.length;
+  for (let i = 0; i < 10; i++) step();
+  assert.equal(requests.length, count);
+});
+
+test('repeated complaints wait for the current clip, while the initial pickup can interrupt', () => {
+  const gate = new TriggerGate();
+  assert.equal(gate.allow('pickedUp', 0, true), true);
+  assert.equal(gate.allow('pickedUp', 1, true, { repeat: true }), false);
+  assert.equal(gate.allow('pickedUp', 5, false, { repeat: true }), true);
+});
+
+const { PasteboardFolderDragTracker } = await import('../desktop.js');
+
+test('native folder drag detection starts on payload change, anywhere, and rejects stale payloads', () => {
+  let payload = { changeCount: 7, isFolder: true };
+  const events = [];
+  const tracker = new PasteboardFolderDragTracker(() => payload, (p) => events.push(p));
+  tracker.update({ x: 200, y: 100 }, false);
+  tracker.update({ x: 300, y: 100 }, true);
+  assert.deepEqual(events, [], 'the previous drag must not count as a new one');
+  payload = { changeCount: 8, isFolder: true };
+  tracker.update({ x: 600, y: 500 }, true);
+  assert.deepEqual(events.at(-1), { x: 600, y: 500 }, 'no icon-origin hit test or desktop restriction');
+  tracker.update({ x: 800, y: 700 }, true);
+  tracker.update({ x: 800, y: 700 }, false);
+  assert.equal(events.at(-1), null);
+  const count = events.length;
+  tracker.update({ x: 900, y: 700 }, true);
+  assert.equal(events.length, count, 'cannot restart the old payload');
+  payload = { changeCount: 9, isFolder: false };
+  tracker.update({ x: 900, y: 700 }, true);
+  assert.equal(events.length, count, 'ordinary files are ignored');
+});
+
+
+test('replacing a live folder payload with a file ends the chase immediately', () => {
+  let payload = { changeCount: 0, isFolder: false };
+  const events = [];
+  const tracker = new PasteboardFolderDragTracker(() => payload, (p) => events.push(p));
+  payload = { changeCount: 1, isFolder: true };
+  tracker.update({ x: 10, y: 20 }, true);
+  payload = { changeCount: 2, isFolder: false };
+  tracker.update({ x: 30, y: 40 }, true);
+  assert.deepEqual(events, [{ x: 10, y: 20 }, null]);
 });

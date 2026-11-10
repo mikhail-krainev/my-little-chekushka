@@ -2,7 +2,7 @@
 const path = require('node:path');
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
 const { flingCursor, isLeftDown, wobbleCursor } = require('./cursor');
-const { FolderDragTracker, DesktopFolders, FolderWindowWatcher, createDesktopBackend } = require('./desktop');
+const { createMacFolderDragReader, PasteboardFolderDragTracker, FolderDragTracker, DesktopFolders, FolderWindowWatcher, createDesktopBackend } = require('./desktop');
 const { Settings } = require('./settings');
 const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
@@ -213,9 +213,12 @@ function startDesktop() {
   desktop = createDesktopBackend({ screen, desktopDir: app.getPath('desktop') });
   if (!desktop) return;
   desktopFolders = new DesktopFolders(desktop, app.getPath('userData'));
-  folderDrag = new FolderDragTracker(() => desktopFolders.list(), (point) => {
-    win?.webContents.send('folder-drag', point ? toLayer(point) : null);
-  });
+  const onFolderDrag = (point) => win?.webContents.send('folder-drag', point ? toLayer(point) : null);
+  if (process.platform === 'darwin') {
+    try { folderDrag = new PasteboardFolderDragTracker(createMacFolderDragReader(), onFolderDrag); }
+    catch (err) { console.error('native folder drag detection unavailable:', err.message); }
+  }
+  folderDrag ??= new FolderDragTracker(() => desktopFolders.list(), onFolderDrag);
   folderWindows = new FolderWindowWatcher(desktop, (rect) => {
     if (!win || !settings.get('peekFolders')) return;
     const b = currentDisplay.bounds;

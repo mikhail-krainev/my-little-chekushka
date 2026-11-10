@@ -66,6 +66,78 @@ function macBackend() {
   };
 }
 
+/** Reads only the system drag pasteboard, never the user's copy/paste clipboard.
+ *  Finder publishes file URLs here when dragging really begins, including drags out of folder windows. */
+function createMacFolderDragReader(boardName = 'Apple CFPasteboard drag') {
+  const koffi = require('koffi');
+  const { fileURLToPath } = require('node:url');
+  const appkit = koffi.load('/System/Library/Frameworks/AppKit.framework/AppKit');
+  const objc = koffi.load('/usr/lib/libobjc.A.dylib');
+  const getClass = objc.func('void* objc_getClass(const char*)');
+  const selector = objc.func('void* sel_registerName(const char*)');
+  const send = objc.func('objc_msgSend', 'void*', ['void*', 'void*']);
+  const sendArg = objc.func('objc_msgSend', 'void*', ['void*', 'void*', 'void*']);
+  const sendText = objc.func('objc_msgSend', 'void*', ['void*', 'void*', 'str']);
+  const sendIndex = objc.func('objc_msgSend', 'void*', ['void*', 'void*', 'uint64']);
+  const integer = objc.func('objc_msgSend', 'int64', ['void*', 'void*']);
+  const text = objc.func('objc_msgSend', 'str', ['void*', 'void*']);
+  const release = objc.func('objc_msgSend', 'void', ['void*', 'void*']);
+  const sel = Object.fromEntries(['new', 'drain', 'retain', 'stringWithUTF8String:', 'pasteboardWithName:',
+    'changeCount', 'pasteboardItems', 'count', 'objectAtIndex:', 'stringForType:', 'UTF8String'].map((s) => [s, selector(s)]));
+  const nsString = (s) => sendText(getClass('NSString'), sel['stringWithUTF8String:'], s);
+  const poolClass = getClass('NSAutoreleasePool');
+  const initialPool = send(poolClass, sel.new);
+  const board = send(sendArg(getClass('NSPasteboard'), sel['pasteboardWithName:'], nsString(boardName)), sel.retain);
+  const fileType = send(nsString('public.file-url'), sel.retain);
+  release(initialPool, sel.drain);
+  let cached = null;
+  return () => {
+    void appkit; // Keep AppKit loaded for the lifetime of the reader.
+    const changeCount = Number(integer(board, sel.changeCount));
+    if (cached?.changeCount === changeCount) return cached;
+    const pool = send(poolClass, sel.new);
+    try {
+      const items = send(board, sel.pasteboardItems);
+      const count = items ? Math.min(64, Number(integer(items, sel.count))) : 0;
+      let isFolder = false;
+      for (let i = 0; i < count && !isFolder; i++) {
+        const item = sendIndex(items, sel['objectAtIndex:'], i);
+        const value = sendArg(item, sel['stringForType:'], fileType);
+        if (!value) continue;
+        const url = text(value, sel.UTF8String);
+        try { isFolder = fs.statSync(fileURLToPath(url)).isDirectory(); } catch { /* Non-file URLs and inaccessible files are ignored. */ }
+      }
+      cached = { changeCount, isFolder };
+      return cached;
+    } finally { release(pool, sel.drain); }
+  };
+}
+
+/** A new drag payload plus a held left button identifies a live drag, without guessing at icon coordinates. */
+class PasteboardFolderDragTracker {
+  constructor(read, onDrag) {
+    this.read = read;
+    this.onDrag = onDrag;
+    this.changeCount = read().changeCount;
+    this.chasing = false;
+  }
+
+  update(point, down) {
+    const payload = this.read();
+    if (!down) {
+      if (this.chasing) this.onDrag(null);
+      this.chasing = false;
+    } else {
+      if (payload.changeCount !== this.changeCount) {
+        if (this.chasing && !payload.isFolder) this.onDrag(null);
+        this.chasing = payload.isFolder;
+      }
+      if (this.chasing) this.onDrag({ ...point });
+    }
+    this.changeCount = payload.changeCount;
+  }
+}
+
 // MARK: Windows
 
 const WIN_HELPER = String.raw`
@@ -462,4 +534,4 @@ class FolderDragTracker {
   }
 }
 
-module.exports = { FolderDragTracker, createDesktopBackend, FolderWindowWatcher, DesktopFolders };
+module.exports = { createMacFolderDragReader, PasteboardFolderDragTracker, FolderDragTracker, createDesktopBackend, FolderWindowWatcher, DesktopFolders };

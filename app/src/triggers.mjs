@@ -139,8 +139,8 @@ export class TriggerGate {
     if (group !== null) this.last[group] = now;
   }
 
-  allow(trigger, now, isTalking) {
-    if (isTalking && !INTERRUPTING.has(trigger)) return false;
+  allow(trigger, now, isTalking, { repeat = false } = {}) {
+    if (isTalking && (repeat || !INTERRUPTING.has(trigger))) return false;
     const group = groupOf(trigger);
     if (group === null) return true;
     if (now - (this.last[group] ?? -Infinity) < this.cooldowns[group].seconds) return false;
