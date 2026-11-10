@@ -32,7 +32,7 @@ test('carrying the mascot protests, rocks the cursor both ways and stops on rele
 });
 
 test('pickup interrupts speech and chooses complaints from the shared pool', () => {
-  assert.deepEqual(TRIGGER_PHRASES.pickedUp, ['aaa']);
+  assert.deepEqual(TRIGGER_PHRASES.pickedUp, ['no']);
   assert.ok(TRIGGER_PHRASES.dragComplaint.includes('zaebal'));
   assert.ok(TRIGGER_PHRASES.dragComplaint.includes('eblan'));
   assert.ok(new TriggerGate().allow('pickedUp', 0, true));
@@ -164,7 +164,7 @@ test('a delayed complaint waits for speech to finish, then starts a fresh 3–5 
   const accepted = [];
   let busyUntil = 0;
   c.onEvent = (name) => {
-    if (name === 'pickedUp') { busyUntil = c.now + 3.2; return true; }
+    if (name === 'pickedUp') { busyUntil = c.now + 1.25; return true; }
     if (name !== 'dragComplaint' || c.now < busyUntil) return false;
     accepted.push(c.now);
     busyUntil = c.now + 4.98;
@@ -173,7 +173,7 @@ test('a delayed complaint waits for speech to finish, then starts a fresh 3–5 
   c.dragBegan({ x: 820, y: 100 });
   for (let i = 0; i < 1800; i++) step();
   assert.ok(accepted.length >= 5);
-  assert.ok(accepted[0] >= 3.2 && accepted[0] <= 5 + 1 / 60);
+  assert.ok(accepted[0] >= 3 && accepted[0] <= 5 + 1 / 60);
   for (let i = 1; i < accepted.length; i++) {
     const gap = accepted[i] - accepted[i - 1];
     assert.ok(gap >= 4.98 && gap <= 5 + 1 / 60, `no clipping or long silence: ${gap}`);
