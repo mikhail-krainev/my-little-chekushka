@@ -108,6 +108,7 @@ export class MascotController {
     return { x: this.pos.x + Config.spritePad, y: this.pos.y + Config.spritePad, w: SIZE.width - 2 * Config.spritePad, h: SIZE.height - 2 * Config.spritePad };
   }
   get isHanging() { return this.state.type === 'hanging' || this.state.type === 'windup'; }
+  get isChasingFolder() { return this.state.type === 'chaseFolder'; }
   get isSleeping() { return this.state.type === 'perform' && this.state.perf.kind === 'sleep'; }
   get canBeInterrupted() { return !['dragged', 'hanging', 'windup', 'air'].includes(this.state.type); }
   get #isBusyWithPrank() { return this.state.type === 'scene' || this.pendingScene !== null; }
@@ -136,6 +137,21 @@ export class MascotController {
     this.#startScene({ kind: 'peek', side }, { x, y: rect.y + rect.height * 0.3 - pad });
   }
 
+  /** Follow the user's folder at running speed until the global mouse button is released. */
+  folderDragged(point) {
+    if (!point) {
+      if (this.isChasingFolder) this.state = { type: 'idle', until: this.now + 1 };
+      return;
+    }
+    if (this.isChasingFolder) { this.state.to = { ...point }; return; }
+    if (!this.canBeInterrupted) return;
+    if (this.state.type === 'scene' && this.state.scene.kind === 'search') this.env.overlay.search?.zap();
+    this.pendingScene = null;
+    this.pendingPerformance = null;
+    this.state = { type: 'chaseFolder', to: { ...point } };
+    this.onEvent?.('folderDragged');
+  }
+
   wakeAndStare() {
     if (this.isSleeping) this.state = { type: 'idle', until: this.now + 1 };
   }
@@ -159,7 +175,7 @@ export class MascotController {
     if (this.state.type === 'scene' && this.state.scene.kind === 'search') this.env.overlay.search?.zap();
     this.pendingPerformance = null;
     this.pendingScene = null;
-    this.state = { type: 'dragged' };
+    this.state = { type: 'dragged', start: this.now, wobble: { x: 0, y: 0 } };
     this.#sound('grab');
     this.onEvent?.('pickedUp');
   }
@@ -208,6 +224,14 @@ export class MascotController {
         if (arrived || t > st.until) this.#finishMove(rand(0.5, 2.5));
         break;
       }
+      case 'chaseFolder': {
+        const to = { x: clamp(st.to.x - SIZE.width / 2, b.minX, maxX), y: clamp(st.to.y - SIZE.height / 2, ground, b.maxY - SIZE.height) };
+        this.walkPhase += dt * 14;
+        const arrived = this.#stepToward(to, Config.runSpeed, dt);
+        pose = arrived ? Animator.idle(clock, base) : Animator.walk(this.walkPhase, this.dir, true, base);
+        if (!arrived) this.#stepSounds(0.9);
+        break;
+      }
       case 'perform': {
         const el = t - st.start;
         pose = Animator.performance(st.perf, el, base);
@@ -249,9 +273,14 @@ export class MascotController {
         pose = Animator.flung(clock, this.vel.x, base);
         this.#stepAir(dt, b, maxX, ground);
         break;
-      case 'dragged':
-        pose = Animator.dragged(clock, base);
+      case 'dragged': {
+        const elapsed = t - st.start;
+        const offset = { x: 14 * Math.sin(elapsed * 15), y: 5 * Math.sin(elapsed * 19) };
+        if (dt > 0) this.env.wobbleCursor?.({ dx: offset.x - st.wobble.x, dy: offset.y - st.wobble.y });
+        st.wobble = offset;
+        pose = Animator.dragged(elapsed, base);
         break;
+      }
       case 'hanging':
         this.#swingOnCursor(dt);
         pose = Animator.hanging(clock, this.swingAngle, base);

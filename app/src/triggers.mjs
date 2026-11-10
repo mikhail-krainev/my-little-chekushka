@@ -18,7 +18,7 @@ export const TRIGGER_PHRASES = {
   userBack: ['zhivoy', 'normalno', 'zhirny'],     // «Живой», «Нормально всё?», «Здорово, жирный!»: after a long pause
   appStart: ['privet', 'rebyata'],      // «Привет, дорогие зрители и подписчики…», «Ребята, ребята, всем привет!»
   // what the user does to the mascot
-  pickedUp: ['no'],                     // «НО!»
+  pickedUp: ['no', 'zaebal', 'eblan', 'ne_govori'], // «НО!»
   thrown: ['aaa'],                      // «А! А! А! Бля!»
   hitWall: ['ne_govori'],               // «Не говори таких слов при мне, блядь»
   grabbedCursor: ['tancuem', 'druzhit', 'dai_ego'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его, блядь!»
@@ -37,6 +37,7 @@ export const TRIGGER_PHRASES = {
   vomit: ['pizdec'],                    // «Да ну нахуй, да это пиздец!»
   // desktop pranks
   folderPeek: ['eto_on', 'o_blyat'],              // peeks into a folder window: «Это он, это реально он!», «О, блядь»
+  folderDragged: ['dai_ego'],                    // chases the folder the user is dragging
   folderPush: ['nu_voznya'],                      // pushes a folder icon: «Ну, пошла возня»
   cursorFight: ['specnaz'],                       // boxes the cursor: «Работай, спецназ! Работай, спецназ!»
   foldersReset: ['ne_volnuysya'],                 // folders put back: «Не волнуйся, маленький, всё будет хорошо»
@@ -120,7 +121,7 @@ export class ReturnWatch {
 }
 
 /** Triggers that may cut off a phrase in progress (a throw usually comes right after the «НО!» of being picked up). */
-export const INTERRUPTING = new Set(['thrown']);
+export const INTERRUPTING = new Set(['pickedUp', 'thrown', 'folderDragged']);
 
 const groupOf = (trigger) => Object.entries(COOLDOWNS).find(([, g]) => g.triggers.has(trigger))?.[0] ?? null;
 

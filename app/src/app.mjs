@@ -133,7 +133,7 @@ const inside = (r, p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= 
 
 /** Turns the cursor and the mouse buttons into hover / click / drag / throw. */
 function updateMouse() {
-  const over = inside(controller.frame, cursor) && !controller.isHanging;
+  const over = inside(controller.frame, cursor) && !controller.isHanging && !controller.isChasingFolder;
   if (over !== mouse.inside) { mouse.inside = over; controller.hoverChanged(over); }
 
   if (mouse.down) {
@@ -257,6 +257,7 @@ async function start() {
     listFolders: () => api.listFolders(),
     moveFolder: (name, point) => api.moveFolder(name, point),
     throwCursor: (request) => api.throwCursor(request),
+    wobbleCursor: (request) => api.wobbleCursor(request),
     nudgeCursor: (request) => api.nudgeCursor(request),
     sfx: (name, gain) => sfx.play(name, { gain }),
     overlay: {
@@ -287,6 +288,8 @@ async function start() {
     else controller.trigger(kind);
   });
   api.onSettings((next) => { settings = next; sfx.enabled = next.soundEffects !== false; });
+  api.onFolderDrag((point) => controller.folderDragged(point));
+  api.onLeftButton((down) => { if (!down) releaseMouse(); });
   api.onFolderOpened((rect) => controller.peekInto(rect));
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();

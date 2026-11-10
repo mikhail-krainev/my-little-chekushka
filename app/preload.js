@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('mellstroy', {
   getScreen: () => ipcRenderer.invoke('screen:get'),
   setIgnoreMouse: (ignore) => ipcRenderer.send('mouse:ignore', Boolean(ignore)),
   reportError: (message) => ipcRenderer.send('app:error', String(message)),
+  onFolderDrag: subscribe('folder-drag'),
+  onLeftButton: subscribe('left-button'),
   onCursor: subscribe('cursor'),
   onScreen: subscribe('screen'),
   onSystemEvent: subscribe('system-event'),
@@ -20,5 +22,6 @@ contextBridge.exposeInMainWorld('mellstroy', {
   listFolders: () => ipcRenderer.invoke('folders:list'),
   moveFolder: (name, point) => ipcRenderer.send('folders:move', String(name), { x: Number(point.x), y: Number(point.y) }),
   throwCursor: (request) => ipcRenderer.send('cursor:throw', request),
+  wobbleCursor: (request) => ipcRenderer.send('cursor:wobble', request),
   nudgeCursor: (request) => ipcRenderer.send('cursor:nudge', request),
 });

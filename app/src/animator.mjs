@@ -123,7 +123,8 @@ export function flung(t, velocityX, base) {
 
 export function dragged(t, base) {
   const p = flung(t, 0, base);
-  p.tilt = Math.sin(t * 7) * 0.08;
+  p.tilt = Math.sin(t * 15) * 0.18;
+  for (const side of Side.both) p.hands[side] = swing(side, 2.35 + 0.4 * Math.sin(t * 20 + (side === 'left' ? 0 : Math.PI)));
   return p;
 }
 

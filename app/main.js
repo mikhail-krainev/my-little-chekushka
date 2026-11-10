@@ -1,8 +1,8 @@
 'use strict';
 const path = require('node:path');
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
-const { flingCursor } = require('./cursor');
-const { DesktopFolders, FolderWindowWatcher, createDesktopBackend } = require('./desktop');
+const { flingCursor, isLeftDown, wobbleCursor } = require('./cursor');
+const { FolderDragTracker, DesktopFolders, FolderWindowWatcher, createDesktopBackend } = require('./desktop');
 const { Settings } = require('./settings');
 const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
@@ -45,6 +45,8 @@ let currentDisplay = null;
 let settings = null;
 let desktop = null;              // platform backend from desktop.js, null where unsupported
 let folderWindows = null;
+let folderDrag = null;
+let buttonReadFailed = false;
 let desktopFolders = null;
 
 function screenshotsDir() {
@@ -113,6 +115,17 @@ function startCursorFeed() {
   cursorTimer = setInterval(() => {
     if (!win || !currentDisplay) return;
     const p = screen.getCursorScreenPoint(), b = currentDisplay.bounds;
+    if (!buttonReadFailed) {
+      try {
+        const down = isLeftDown(screen);
+        folderDrag?.update(p, down);
+        win.webContents.send('left-button', down);
+      } catch (err) {
+        buttonReadFailed = true;
+        folderDrag?.update(p, false);
+        console.error('global mouse button unavailable:', err.message);
+      }
+    }
     win.webContents.send('cursor', { x: p.x - b.x, y: b.height - (p.y - b.y) });
   }, CURSOR_POLL_MS);
 }
@@ -200,6 +213,9 @@ function startDesktop() {
   desktop = createDesktopBackend({ screen, desktopDir: app.getPath('desktop') });
   if (!desktop) return;
   desktopFolders = new DesktopFolders(desktop, app.getPath('userData'));
+  folderDrag = new FolderDragTracker(() => desktopFolders.list(), (point) => {
+    win?.webContents.send('folder-drag', point ? toLayer(point) : null);
+  });
   folderWindows = new FolderWindowWatcher(desktop, (rect) => {
     if (!win || !settings.get('peekFolders')) return;
     const b = currentDisplay.bounds;
@@ -249,6 +265,11 @@ ipcMain.on('menu:show', () => win && Menu.buildFromTemplate(menuTemplate()).popu
 ipcMain.handle('folders:list', () => listFolders());
 ipcMain.on('folders:move', (_e, name, point) => moveFolder(name, point));
 ipcMain.on('cursor:throw', (_e, request) => throwCursor(request));
+ipcMain.on('cursor:wobble', (_e, request) => {
+  if (!settings.get('fightCursor') || !Number.isFinite(request?.dx) || !Number.isFinite(request?.dy)) return;
+  try { wobbleCursor(screen, { dx: Math.max(-6, Math.min(6, request.dx)), dy: Math.max(-6, Math.min(6, request.dy)) }); }
+  catch (err) { console.error('cursor wobble failed:', err.message); }
+});
 ipcMain.on('cursor:nudge', (_e, request) => nudgeCursor(request));
 
 app.whenReady().then(async () => {

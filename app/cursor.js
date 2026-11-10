@@ -5,6 +5,7 @@
 const STEP_MS = 8;
 
 let native = null;
+let leftButton = null;
 
 /** The platform call that puts the cursor at a global DIP point, or null when there is none. */
 function loadWarp(screen) {
@@ -13,6 +14,7 @@ function loadWarp(screen) {
   if (process.platform === 'darwin') {
     const cg = koffi.load('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics');
     const CGPoint = koffi.struct('CGPoint', { x: 'double', y: 'double' });
+    leftButton = cg.func('bool CGEventSourceButtonState(int32, uint32)');
     const warp = cg.func('int32 CGWarpMouseCursorPosition(CGPoint)');
     const associate = cg.func('int32 CGAssociateMouseAndMouseCursorPosition(int32)');
     native = (p) => {
@@ -21,6 +23,8 @@ function loadWarp(screen) {
     };
   } else if (process.platform === 'win32') {
     const user32 = koffi.load('user32.dll');
+    const getKeyState = user32.func('int16 __stdcall GetAsyncKeyState(int vKey)');
+    leftButton = () => (getKeyState(1) & 0x8000) !== 0;
     const setCursorPos = user32.func('int __stdcall SetCursorPos(int x, int y)');
     native = (p) => {
       const px = screen.dipToScreenPoint(p);
@@ -56,4 +60,21 @@ function flingCursor(screen, { from, to, duration, lift }) {
   });
 }
 
-module.exports = { flingCursor };
+/** Global button state also works over Finder / Explorer, outside the transparent layer. */
+function isLeftDown(screen) {
+  loadWarp(screen);
+  return leftButton ? Boolean(leftButton(0, 0)) : false;
+}
+
+/** An immediate relative step leaves no animation running after the button is released. */
+function wobbleCursor(screen, { dx, dy }) {
+  if (!isLeftDown(screen)) return;
+  const from = screen.getCursorScreenPoint();
+  const b = screen.getDisplayNearestPoint(from).bounds;
+  loadWarp(screen)({
+    x: Math.max(b.x + 2, Math.min(b.x + b.width - 2, from.x + dx)),
+    y: Math.max(b.y + 2, Math.min(b.y + b.height - 2, from.y - dy)),
+  });
+}
+
+module.exports = { flingCursor, isLeftDown, wobbleCursor };

@@ -6,12 +6,11 @@ import {
   BurstCounter, COOLDOWNS, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent,
 } from '../src/triggers.mjs';
 
-test('every trigger names an existing phrase, and every phrase has exactly one trigger', () => {
+test('every trigger names an existing phrase, and every phrase has a trigger', () => {
   const keys = new Set(PHRASE_CLIPS.map((c) => c.key));
   const used = Object.values(TRIGGER_PHRASES).flat();
   for (const key of used) assert.ok(keys.has(key), key);
-  assert.equal(new Set(used).size, used.length);
-  assert.deepEqual([...keys].sort(), [...used].sort());
+  assert.deepEqual([...keys].sort(), [...new Set(used)].sort());
 });
 
 test('system events are told apart: folder, download, screenshot, plain file, deletion', () => {
@@ -58,7 +57,7 @@ test('the gate keeps phrases from overlapping and each group apart, but a throw 
     system: { seconds: 8, triggers: new Set(['fileCreated', 'fileDeleted', 'appQuit']) },
     action: { seconds: 25, triggers: new Set(['sit', 'spit']) },
   });
-  assert.equal(gate.allow('pickedUp', 0, true), false);
+  assert.equal(gate.allow('pickedUp', 0, true), true);
   assert.equal(gate.allow('thrown', 0, true), true);
   assert.equal(gate.allow('fileCreated', 0, false), true);
   assert.equal(gate.allow('fileDeleted', 5, false), false);    // too soon after the last system phrase

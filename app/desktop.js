@@ -434,4 +434,32 @@ class DesktopFolders {
   }
 }
 
-module.exports = { createDesktopBackend, FolderWindowWatcher, DesktopFolders };
+/** Recognizes a drag that starts on a desktop folder; asynchronous lookups belong to one button press only. */
+class FolderDragTracker {
+  constructor(listFolders, onDrag) {
+    this.listFolders = listFolders;
+    this.onDrag = onDrag;
+    this.press = null;
+  }
+
+  update(point, down) {
+    if (!down) {
+      if (this.press?.chasing) this.onDrag(null);
+      this.press = null;
+      return;
+    }
+    if (!this.press) {
+      const press = this.press = { start: { ...point }, folder: false, chasing: false };
+      this.listFolders().then((folders) => {
+        if (this.press !== press) return;
+        press.folder = folders.some((f) => Math.abs(f.x - press.start.x) <= 36 && Math.abs(f.y - press.start.y) <= 40);
+      }).catch((err) => console.error('folder drag lookup:', err.message));
+    }
+    const press = this.press;
+    if (!press.folder || (!press.chasing && Math.hypot(point.x - press.start.x, point.y - press.start.y) < 6)) return;
+    press.chasing = true;
+    this.onDrag({ ...point });
+  }
+}
+
+module.exports = { FolderDragTracker, createDesktopBackend, FolderWindowWatcher, DesktopFolders };
