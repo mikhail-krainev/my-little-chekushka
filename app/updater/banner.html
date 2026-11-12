@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Обновление</title>
+  <style>
+    :root {
+      --card: #1c1e24; --edge: #3a3326; --text: #f1ece2; --muted: #a8a196; --gold: #d4ad68; --gold-ink: #241c0e;
+      --track: #34363d; --danger: #e07a64;
+      font: 13px/1.35 -apple-system, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+    .card {
+      margin: 6px; padding: 14px 16px; border-radius: 12px;
+      background: var(--card); border: 1px solid var(--edge); color: var(--text);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 6px;
+    }
+    .title { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .title::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--gold); flex: none; }
+    .card.error .title::before { background: var(--danger); }
+    .text { color: var(--muted); }
+    .bar { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+    .bar > div { height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+    .buttons { margin-top: 4px; display: flex; gap: 8px; justify-content: flex-end; }
+    .buttons:empty { display: none; }
+    button {
+      font: inherit; font-weight: 600; border-radius: 7px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
+      border: 1px solid var(--edge); background: transparent; color: var(--text);
+    }
+    button.primary { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+    button:hover { filter: brightness(1.1); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="title" id="title"></div>
+    <div class="text" id="text"></div>
+    <div class="bar" id="bar" hidden><div id="fill"></div></div>
+    <div class="buttons" id="buttons"></div>
+  </div>
+  <script src="./banner-view.js"></script>
+</body>
+</html>

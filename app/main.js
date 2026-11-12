@@ -6,6 +6,7 @@ const { createMacFolderDragReader, PasteboardFolderDragTracker, FolderDragTracke
 const { Settings } = require('./settings');
 const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
+const { startUpdates } = require('./updater');
 
 const CURSOR_POLL_MS = 16;
 const TRAY_SIZE = 18;
@@ -48,6 +49,7 @@ let folderWindows = null;
 let folderDrag = null;
 let buttonReadFailed = false;
 let desktopFolders = null;
+let updates = null;              // UpdateManager, null when this build cannot update itself
 
 function screenshotsDir() {
   const i = process.argv.indexOf('--screenshots');
@@ -192,8 +194,20 @@ function menuTemplate() {
       })),
     },
     { type: 'separator' },
+    ...updateMenu(),
     { label: 'Выход', click: () => app.quit() },
   ];
+}
+
+/** "Install version X" once an update is known, otherwise "Check for updates"; nothing in builds without updates. */
+function updateMenu() {
+  if (!updates) return [];
+  const version = updates.availableVersion;
+  return [{
+    label: version ? `Установить версию ${version}` : 'Проверить обновления',
+    enabled: !updates.isBusy,
+    click: () => (version ? updates.install() : updates.check({ manual: true })),
+  }];
 }
 
 function rebuildTrayMenu() {
@@ -293,6 +307,8 @@ app.whenReady().then(async () => {
   createWindow(currentDisplay);
   startDesktop();
   createTray();
+  updates = startUpdates({ onChange: rebuildTrayMenu });
+  rebuildTrayMenu();
   startCursorFeed();
   relayoutOnDisplayChange();
   watcher = new SystemWatcher((event) => win?.webContents.send('system-event', event));
@@ -305,5 +321,6 @@ app.on('before-quit', () => {
   watcher?.stop();
   folderWindows?.stop();
   desktop?.dispose();
+  updates?.stop();
   clearInterval(cursorTimer);
 });

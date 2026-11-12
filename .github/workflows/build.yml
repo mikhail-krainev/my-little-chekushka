@@ -55,9 +55,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: chekushka-${{ matrix.name }}
+          # installers, plus what the in-app updater reads: the macOS .zip bundles (verified against the sha256
+          # GitHub publishes for release assets) and latest.yml with the .exe blockmap for electron-updater on Windows
           path: |
             app/dist/*.pkg
             app/dist/*.exe
+            app/dist/*.zip
+            app/dist/latest.yml
+            app/dist/*.exe.blockmap
           if-no-files-found: error
 
   release:

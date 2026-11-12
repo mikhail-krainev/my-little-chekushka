@@ -39,6 +39,7 @@
       "desktop.js",
       "cursor.js",
       "screenshots.js",
+      "updater/**/*",
       "src/**/*",
       "assets/**/*",
       "package.json"
@@ -46,7 +47,8 @@
     "mac": {
       "category": "public.app-category.entertainment",
       "target": [
-        "pkg"
+        "pkg",
+        "zip"
       ],
       "extendInfo": {
         "LSUIElement": true,
@@ -77,9 +79,17 @@
     "pkg": {
       "installLocation": "/Applications",
       "isRelocatable": false
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mikhail-krainev",
+        "repo": "my-little-chekushka"
+      }
+    ]
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "koffi": "3.3.4"
   }
 }
