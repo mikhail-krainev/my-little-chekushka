@@ -322,7 +322,7 @@ app.whenReady().then(async () => {
   currentDisplay = screen.getPrimaryDisplay();
   settings = new Settings(app.getPath('userData'));
   createWindow(currentDisplay);
-  quitDialog = new QuitDialog({ onOpen: () => sendTrigger('quitAttempt') });
+  quitDialog = new QuitDialog({ onSay: (key) => win?.webContents.send('say-phrase', key) });
   startVoice();
   startDesktop();
   createTray();

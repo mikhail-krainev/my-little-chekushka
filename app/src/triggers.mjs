@@ -26,8 +26,15 @@ export const TRIGGER_PHRASES = {
   grabbedCursor: ['tancuem', 'druzhit', 'dai_ego', 'tsupa', 'habibi'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его!»,
                                         // «Иди сюда, малыш!», «Хабиби!»
   wokenUp: ['molchat', 'vody_kofe'],    // «Молчать, блядь», «Воды, блядь, нахуй! И нахуй кофе!»
-  clickSpam: ['eblan', 'klik', 'dolboeb'],
-  quitAttempt: ['no', 'pochemu', 'dai_dai'],   // «Выход» chosen: «НО!», «Почему ты, блядь…», «Блядь, дай!»   // «Блин, ты чё, еблан?», «…один ебаный клик», «Я что, на долбоёба похож?»
+  clickSpam: ['eblan', 'klik', 'dolboeb'],   // «Блин, ты чё, еблан?», «…один ебаный клик», «Я что, на долбоёба похож?»
+  quitAttempt: ['no', 'pochemu', 'dai_dai'],   // «Выход» chosen: «НО!», «Почему ты, блядь…», «Блядь, дай!»
+  // the runaway «Выйти» button (quit/): trolling the user each time it slips away, then giving in
+  quitTaunt: [
+    'klik', 'degradaciya', 'eblan', 'dolboeb', 'kto_luchshiy', 'tsupa', 'normaldy', 'bystree', 'kislyy', 'zhirny',
+    'tolstyy', 'specnaz', 'ne_volnuysya', 'tancuem', 'zavtra', 'sverchki', 'habibi', 'baba_bystree',
+  ],                                    // «…один ебаный клик», «Седьмая стадия деградации», «Ты чё, еблан?», «Цупа-цупа…
+                                        // иди сюда, малыш», «Кто лучший? Да я знаю», «Работай, спецназ!», «Чё кислый?»
+  quitGiveUp: ['pohuy'],                // «Да похуй, ну и ладно»: the button gets tired and can be caught
   // the mascot's own floor actions
   sit: ['dura'],                        // «Сядь, дура толстая!»
   sleep: ['bayu'],                      // «Ох, баёшечки, баёшечки…»

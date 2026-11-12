@@ -28,4 +28,5 @@ contextBridge.exposeInMainWorld('mellstroy', {
   voiceHold: (seconds) => ipcRenderer.send('voice:hold', Number(seconds)),
   onVoiceState: subscribe('voice-state'),
   onVoiceHeard: subscribe('voice-heard'),
+  onSayPhrase: subscribe('say-phrase'),
 });

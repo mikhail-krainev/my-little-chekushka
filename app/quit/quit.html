@@ -2,44 +2,35 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'">
   <title>Выход</title>
+  <link rel="stylesheet" href="../ui/pixel.css">
   <style>
-    :root {
-      --card: #1c1e24; --edge: #3a3326; --text: #f1ece2; --muted: #a8a196; --gold: #d4ad68; --gold-ink: #241c0e;
-      --danger: #e07a64; --danger-ink: #2a0f09;
-      font: 14px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; overflow: hidden; user-select: none; background: rgba(8, 8, 12, .38); }
+    html, body { margin: 0; height: 100%; overflow: hidden; user-select: none; }
+    /* dimmed screen with a coarse dither, like the scene behind a pixel-game dialog */
+    body { background: repeating-conic-gradient(rgba(14, 12, 12, .42) 0 25%, rgba(14, 12, 12, .34) 0 50%) 0 0 / 4px 4px; }
     .card {
-      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 340px; padding: 18px 20px;
-      border-radius: 14px; background: var(--card); border: 1px solid var(--edge); color: var(--text);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .45); display: flex; flex-direction: column; gap: 8px;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 400px; padding: 16px 18px;
+      display: flex; gap: 14px; align-items: flex-end;
     }
-    .title { font-weight: 700; font-size: 16px; }
-    .text { color: var(--muted); min-height: 2.8em; }
-    .buttons { display: flex; justify-content: flex-end; margin-top: 4px; }
-    button {
-      font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; white-space: nowrap;
-      border: 1px solid var(--edge);
-    }
-    #stay { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
-    #quit {
-      position: absolute; left: 0; top: 0; background: var(--danger); border-color: var(--danger); color: var(--danger-ink);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, .4); will-change: transform;
-    }
-    #quit.tired { transition: filter .3s; filter: saturate(.7); }
-    button:hover { filter: brightness(1.1); }
+    .px-sprite { width: 81px; height: 130px; }
+    .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; align-self: stretch; }
+    .px-bubble { flex: 1; display: flex; align-items: center; min-height: 64px; }
+    .buttons { display: flex; justify-content: flex-end; }
+    #quit { position: absolute; left: 0; top: 0; margin: 0; will-change: transform; }
+    #quit.tired { filter: saturate(.6) brightness(.95); }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="title">Уже уходишь?</div>
-    <div class="text" id="text">Попробуй поймать кнопку «Выйти».</div>
-    <div class="buttons"><button id="stay" type="button">Остаться</button></div>
+  <div class="card px-panel">
+    <img class="px-sprite" src="../assets/sprites/body.png" alt="">
+    <div class="body">
+      <div class="px-title">Уже уходишь?</div>
+      <div class="px-bubble" id="text">Попробуй поймать кнопку «Выйти».</div>
+      <div class="buttons"><button id="stay" class="px-btn primary" type="button">Остаться</button></div>
+    </div>
   </div>
-  <button id="quit" type="button" tabindex="-1">Выйти</button>
+  <button id="quit" class="px-btn danger" type="button" tabindex="-1">Выйти</button>
   <script type="module" src="./quit-view.mjs"></script>
 </body>
 </html>

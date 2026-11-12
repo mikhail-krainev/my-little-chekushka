@@ -331,7 +331,7 @@ async function start() {
   api.onSystemEvent(onSystemEvent);
   api.onTrigger((kind) => {
     if (kind === 'say') sayRandom();
-    else if (kind === 'foldersReset' || kind === 'quitAttempt') sayFor(kind, { requested: true });
+    else if (kind === 'foldersReset') sayFor('foldersReset', { requested: true });
     else controller.trigger(kind);
   });
   api.onSettings((next) => { settings = next; sfx.enabled = next.soundEffects !== false; });
@@ -339,6 +339,7 @@ async function start() {
   api.onLeftButton((down) => { if (!down) releaseMouse(); });
   api.onVoiceState(onVoiceState);
   api.onVoiceHeard(answer);
+  api.onSayPhrase((key) => say(phrases.clip(key)));   // the quit window's taunts
   api.onFolderOpened((rect) => controller.peekInto(rect));
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();

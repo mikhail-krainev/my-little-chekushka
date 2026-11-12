@@ -41,6 +41,7 @@
       "screenshots.js",
       "updater/**/*",
       "quit/**/*",
+      "ui/**/*",
       "voice/**/*",
       "src/**/*",
       "assets/**/*",

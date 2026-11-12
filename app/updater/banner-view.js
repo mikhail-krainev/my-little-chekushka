@@ -3,7 +3,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const isMac = navigator.platform.toLowerCase().startsWith('mac');
-  const CARD_MARGIN = 6;   // px around the card, as in banner.html
+  const CARD_MARGIN = 18;  // px of vertical margin around the card (6 above, 12 below for its shadow), as in banner.html
 
   const VIEWS = {
     available: (s) => ({
@@ -32,12 +32,12 @@
     const buttons = (view.buttons ?? []).map(([action, label, primary]) => {
       const button = document.createElement('button');
       button.textContent = label;
-      if (primary) button.className = 'primary';
+      button.className = primary ? 'px-btn primary' : 'px-btn';
       button.addEventListener('click', () => window.updateBanner.act(action));
       return button;
     });
     $('buttons').replaceChildren(...buttons);
-    window.updateBanner.fit(Math.ceil($('card').getBoundingClientRect().height) + 2 * CARD_MARGIN);
+    window.updateBanner.fit(Math.ceil($('card').getBoundingClientRect().height) + CARD_MARGIN);
   }
 
   window.updateBanner.onState(render);

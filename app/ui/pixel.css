@@ -1,0 +1,83 @@
+/* Pixel look shared by the app's own windows (update banner, quit overlay), matched to the mascot: a pixelated photo
+   in muted warm greys, never pure black or white, with the bottle label's paper, navy ink and faded red as accents.
+   Hard pixel borders with notched corners, hard drop shadows, a faint dither instead of flat fills, no rounding.
+   Colours come from assets/sprites/body.png and the speech bubble (src/bubble.mjs). */
+:root {
+  --px: 3px;                           /* one "art pixel" of the frames */
+  --paper: #dcd6cf;                    /* label paper */
+  --paper-dither: #d3ccc4;
+  --paper-light: #ece7e1;
+  --paper-dark: #aea69e;
+  --ink: #2f3842;                      /* label navy */
+  --ink-light: #46525e;
+  --outline: #33333d;                  /* speech bubble outline */
+  --text: #211a1a;                     /* speech bubble text */
+  --muted: #5d5652;
+  --glass: #6b6560;                    /* bottle glass grey */
+  --red: #a4544b;                      /* faded label red */
+  --red-dark: #7a3a34;
+  --shadow: rgba(14, 12, 12, .5);
+  --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+}
+
+* { box-sizing: border-box; }
+
+/* A frame: border drawn with shadows on four sides only, so the corners stay notched like pixel art. */
+.px-panel {
+  position: relative;
+  color: var(--text);
+  font: bold 13px/1.4 var(--font);
+  background: repeating-conic-gradient(var(--paper) 0 25%, var(--paper-dither) 0 50%) 0 0 / 4px 4px;
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--outline), 0 var(--px) 0 0 var(--outline),
+    calc(-1 * var(--px)) 0 0 0 var(--outline), var(--px) 0 0 0 var(--outline),
+    inset var(--px) var(--px) 0 0 var(--paper-light), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 var(--paper-dark),
+    calc(3 * var(--px)) calc(3 * var(--px)) 0 0 var(--shadow);
+}
+
+.px-title { font-size: 14px; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; display: flex; gap: 8px; align-items: center; }
+.px-title::before { content: ""; width: 8px; height: 8px; flex: none; background: var(--ink); box-shadow: 2px 2px 0 var(--paper-dark); }
+.px-text { color: var(--muted); font-weight: bold; }
+
+/* The mascot himself, scaled by whole pixels. */
+.px-sprite { image-rendering: pixelated; image-rendering: crisp-edges; flex: none; filter: drop-shadow(3px 3px 0 var(--shadow)); }
+
+.px-btn {
+  font: bold 13px/1 var(--font); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; cursor: pointer;
+  padding: 9px 14px; margin: var(--px); border: 0; border-radius: 0;
+  color: var(--ink); background: var(--paper-light);
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--outline), 0 var(--px) 0 0 var(--outline),
+    calc(-1 * var(--px)) 0 0 0 var(--outline), var(--px) 0 0 0 var(--outline),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 var(--paper-dark),
+    calc(2 * var(--px)) calc(2 * var(--px)) 0 0 var(--shadow);
+}
+.px-btn:hover { filter: brightness(1.06); }
+.px-btn:active { transform: translate(var(--px), var(--px)); box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--outline), 0 var(--px) 0 0 var(--outline),
+    calc(-1 * var(--px)) 0 0 0 var(--outline), var(--px) 0 0 0 var(--outline); }
+.px-btn:focus-visible { outline: 2px dashed var(--ink); outline-offset: 6px; }
+.px-btn.primary { color: var(--paper-light); background: var(--ink);
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--outline), 0 var(--px) 0 0 var(--outline),
+    calc(-1 * var(--px)) 0 0 0 var(--outline), var(--px) 0 0 0 var(--outline),
+    inset var(--px) var(--px) 0 0 var(--ink-light), calc(2 * var(--px)) calc(2 * var(--px)) 0 0 var(--shadow); }
+.px-btn.danger { color: var(--paper-light); background: var(--red);
+  box-shadow:
+    0 calc(-1 * var(--px)) 0 0 var(--outline), 0 var(--px) 0 0 var(--outline),
+    calc(-1 * var(--px)) 0 0 0 var(--outline), var(--px) 0 0 0 var(--outline),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 var(--red-dark), calc(2 * var(--px)) calc(2 * var(--px)) 0 0 var(--shadow); }
+
+/* Progress: a sunken track filled with separate blocks. */
+.px-bar { height: 14px; padding: 3px; background: var(--glass);
+  box-shadow: 0 -2px 0 0 var(--outline), 0 2px 0 0 var(--outline), -2px 0 0 0 var(--outline), 2px 0 0 0 var(--outline); }
+.px-bar > div { height: 100%; width: 0; transition: width .2s steps(6);
+  background: repeating-linear-gradient(90deg, var(--paper-light) 0 6px, transparent 6px 8px); }
+
+/* A speech bubble like the one over the mascot, with a stepped tail on the left. */
+.px-bubble { position: relative; padding: 8px 12px; background: #fff7ee; color: var(--text); font: bold 13px/1.35 var(--font);
+  box-shadow: 0 -2px 0 0 var(--outline), 0 2px 0 0 var(--outline), -2px 0 0 0 var(--outline), 2px 0 0 0 var(--outline); }
+/* the tail: an outline triangle with the bubble's paper inside, overlapping the left border so they join */
+.px-bubble::before, .px-bubble::after { content: ""; position: absolute; top: 14px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.px-bubble::before { left: -12px; width: 12px; height: 16px; background: var(--outline); }
+.px-bubble::after { left: -8px; top: 17px; width: 10px; height: 10px; background: #fff7ee; }
