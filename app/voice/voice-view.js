@@ -32,9 +32,13 @@ async function start() {
   });
   const audio = new AudioContext();
   const recognizer = new model.KaldiRecognizer(audio.sampleRate);
+  recognizer.setWords(true);              // per-word confidence, to tell speech to him from background noise
   recognizer.on('result', (message) => {
     const text = message.result?.text;
-    if (text && !isHeld()) api.heard(text);
+    if (!text || isHeld()) return;
+    const words = message.result.result ?? [];
+    const confidence = words.length ? words.reduce((sum, w) => sum + w.conf, 0) / words.length : undefined;
+    api.heard(text, confidence);
   });
   recognizer.on('error', (message) => api.error(message.error ?? 'recognizer error'));
 

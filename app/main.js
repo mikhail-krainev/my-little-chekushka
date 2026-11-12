@@ -104,6 +104,9 @@ function createWindow(display) {
     x: b.x, y: b.y, width: b.width, height: b.height,
     transparent: true, frame: false, hasShadow: false, resizable: false, movable: false, fullscreenable: false,
     skipTaskbar: true, focusable: false, alwaysOnTop: true, show: false, backgroundColor: '#00000000',
+    // macOS otherwise pushes a window this tall below the menu bar: the drawing slides down while the cursor is still
+    // measured from the top of the display, and small targets (the microphone button) miss their clicks
+    enableLargerThanScreen: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
@@ -302,7 +305,7 @@ function startVoice() {
   voice = new VoiceService({
     dir: path.join(app.getPath('userData'), 'voice'),
     onState: (status) => win?.webContents.send('voice-state', status),
-    onHeard: (text) => win?.webContents.send('voice-heard', text),
+    onHeard: (heard) => win?.webContents.send('voice-heard', heard),
   });
 }
 

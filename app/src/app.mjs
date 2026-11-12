@@ -9,7 +9,7 @@ import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { SearchBar } from './searchbar.mjs';
 import { Sfx } from './sfx.mjs';
 import { ShatterWorld } from './shatter.mjs';
-import { replyTopic } from './replies.mjs';
+import { ReplyPicker, isWorthAnswering, replyTopic } from './replies.mjs';
 import { PhrasePlayer, ShuffleBag } from './talk.mjs';
 import { BurstCounter, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent } from './triggers.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
@@ -69,7 +69,7 @@ const deletions = new BurstCounter(MASS_DELETE.count, MASS_DELETE.window);
 const clicks = new BurstCounter(CLICK_SPAM.count, CLICK_SPAM.window);
 const userReturn = new ReturnWatch(AWAY_SECONDS);
 const mic = new MicButton(clock);
-const replyBags = new Map();       // topic → ShuffleBag of its loaded clips
+const replies = new ReplyPicker();
 
 const mouse = { down: false, dragging: false, start: { x: 0, y: 0 }, samples: [], inside: false };
 
@@ -100,8 +100,10 @@ function showBubble(text, duration) {
 }
 
 /** Plays a clip (voice + talking face) with its text in the bubble, cutting off whatever was being said. */
-function say(clip) {
-  if (!clip) return;
+/** Plays a clip (voice + talking face) with its text in the bubble, cutting off whatever was being said. While the
+ *  microphone is on he talks only to answer the user (`always`: answers and the quit window's taunts). */
+function say(clip, { always = false } = {}) {
+  if (!clip || (mic.isOn && !always)) return;
   if (mic.isListening) api.voiceHold(clip.duration + SELF_ECHO_TAIL);
   phrases.play(clip);
   showBubble(clip.text, clip.duration + PHRASE_BUBBLE_TAIL);
@@ -127,15 +129,14 @@ function onClick() {
   if (clicks.hit(clock())) say(triggerBags.clickSpam?.next()); else sayRandom();
 }
 
-/** A phrase that fits what the user said into the microphone. */
-function answer(text) {
+/** A phrase that fits what the user said into the microphone; noise and mumbling get no answer. */
+function answer({ text, confidence }) {
+  if (!isWorthAnswering(text, confidence)) return;
   const reply = replyTopic(text);
   if (!reply) return;
-  if (!replyBags.has(reply.topic)) {
-    replyBags.set(reply.topic, new ShuffleBag(reply.phrases.map((key) => phrases.clip(key)).filter(Boolean)));
-  }
+  const key = replies.next(reply, (k) => phrases.clip(k) !== null);
   controller.wakeAndStare();
-  say(replyBags.get(reply.topic).next());
+  say(phrases.clip(key), { always: true });
 }
 
 function onVoiceState(status) {
@@ -339,7 +340,7 @@ async function start() {
   api.onLeftButton((down) => { if (!down) releaseMouse(); });
   api.onVoiceState(onVoiceState);
   api.onVoiceHeard(answer);
-  api.onSayPhrase((key) => say(phrases.clip(key)));   // the quit window's taunts
+  api.onSayPhrase((key) => say(phrases.clip(key), { always: true }));   // the quit window's taunts
   api.onFolderOpened((rect) => controller.peekInto(rect));
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();

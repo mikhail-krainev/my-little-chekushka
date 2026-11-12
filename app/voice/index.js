@@ -26,7 +26,7 @@ class VoiceService {
   /**
    * @param dir folder for the downloaded model
    * @param onState ({ state: 'off'|'downloading'|'loading'|'listening'|'error', progress?, error? }) => void
-   * @param onHeard (text) => void
+   * @param onHeard ({ text, confidence }) => void, confidence: mean word confidence 0...1 when known
    */
   constructor({ dir, onState, onHeard }) {
     this.dir = dir;
@@ -42,10 +42,10 @@ class VoiceService {
     ipcMain.handle('voice:config', (event) => (fromVoice(event) ? { modelUrl: MODEL_URL } : null));
     ipcMain.on('voice:state', (event, state) => { if (fromVoice(event) && STATES.has(state)) this.#set({ state }); });
     ipcMain.on('voice:error', (event, message) => { if (fromVoice(event)) this.#fail(String(message)); });
-    ipcMain.on('voice:heard', (event, text) => {
+    ipcMain.on('voice:heard', (event, text, confidence) => {
       if (!fromVoice(event) || typeof text !== 'string') return;
       const heard = text.trim().slice(0, MAX_HEARD_LENGTH);
-      if (heard) this.onHeard(heard);
+      if (heard) this.onHeard({ text: heard, confidence: Number.isFinite(confidence) ? confidence : undefined });
     });
   }
 

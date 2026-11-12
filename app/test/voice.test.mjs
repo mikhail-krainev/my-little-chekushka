@@ -7,14 +7,15 @@ import path from 'node:path';
 import { test } from 'node:test';
 import zlib from 'node:zlib';
 import { PHRASE_CLIPS } from '../src/phrase-clips.mjs';
-import { FALLBACK_PHRASES, REPLY_TOPICS, normalize, replyTopic } from '../src/replies.mjs';
+import { FALLBACK, REPLY_RULES, ReplyPicker, isWorthAnswering, normalize, replyTopic } from '../src/replies.mjs';
 
 const require = createRequire(import.meta.url);
 const { readZip, zipToTarGz } = require('../voice/model.js');
 
 test('every reply phrase is a real clip', () => {
   const keys = new Set(PHRASE_CLIPS.map((c) => c.key));
-  for (const key of [...REPLY_TOPICS.flatMap((t) => t.phrases), ...FALLBACK_PHRASES]) assert.ok(keys.has(key), key);
+  const all = [...REPLY_RULES, FALLBACK.question, FALLBACK.statement].flatMap((r) => r.phrases);
+  for (const key of all) assert.ok(keys.has(key), key);
 });
 
 test('normalising drops case, ё and punctuation', () => {
@@ -22,26 +23,42 @@ test('normalising drops case, ё and punctuation', () => {
   assert.equal(normalize(null), '');
 });
 
-test('the words pick a fitting topic', () => {
+test('what the user says gets the answer that fits it best', () => {
   const cases = {
-    'привет как дела': 'greeting',
+    'привет': 'greeting',
+    'привет как дела': 'howAreYou',          // the longer match wins over the greeting
     'как у тебя дела': 'howAreYou',
-    'ты кто такой вообще': 'whoAreYou',
-    'дай денег на казино': 'money',
-    'ты молодец красавчик': 'praise',
-    'замолчи уже': 'quiet',
-    'ты дебил': 'insult',
+    'ты тут': 'areYouThere',
+    'меня зовут андрей': 'meet',
+    'как тебя зовут': 'whoAreYou',
+    'кто лучший': 'whoIsBest',
+    'ты дебил': 'callsHimStupid',
+    'ну ты и жирный': 'callsHimFat',
+    'пошел ты нахуй': 'sendsHimAway',
+    'замолчи уже': 'shutUp',
+    'мне страшно': 'scared',
     'мне грустно и плохо': 'sad',
+    'давай дружить': 'friends',
+    'да ладно': 'surprise',
+    'я проиграл все деньги': 'broke',
+    'дай денег на казино': 'betting',
+    'что подарить бате': 'gift',
     'хочу пиццу': 'food',
     'пойдём выпьем пива': 'drink',
-    'спокойной ночи': 'sleep',
-    'сегодня жарко': 'weather',
+    'сегодня жарко': 'hot',
     'вызову полицию': 'police',
-    'давай танцевать': 'dance',
-    'тёлка у тебя есть': 'women',
-    'что подарить папе': 'family',
+    'спокойной ночи': 'bye',
+    'что мне делать': 'whatToDo',
+    'сделай домашку': 'doIt',
+    'прыгнешь с парашютом': 'skydive',
   };
   for (const [text, topic] of Object.entries(cases)) assert.equal(replyTopic(text)?.topic, topic, text);
+});
+
+test('the exact answers for the key questions', () => {
+  assert.deepEqual(replyTopic('ты где').phrases, ['ty_tut']);          // «Привет, ты тут? Я тут…»
+  assert.deepEqual(replyTopic('что подарить папе').phrases, ['klyuch']);   // «Что подарить бате? Огромный ключ…»
+  assert.ok(replyTopic('ты долбоеб').phrases.includes('dolboeb'));      // «Я что, долбоёб, что ли? Нет…»
 });
 
 test('Russian words do not match inside other words', () => {
@@ -50,10 +67,30 @@ test('Russian words do not match inside other words', () => {
   assert.notEqual(replyTopic('хорошее настроение')?.topic, 'women');  // «наст» inside «настроение»
 });
 
-test('unknown words get the fallback and silence gets nothing', () => {
-  assert.equal(replyTopic('синхрофазотрон').topic, 'unknown');
-  assert.deepEqual(replyTopic('синхрофазотрон').phrases, FALLBACK_PHRASES);
+test('unknown words get a shrug, unknown questions a puzzled look, silence nothing', () => {
+  assert.equal(replyTopic('синхрофазотрон'), FALLBACK.statement);
+  assert.equal(replyTopic('сколько стоит синхрофазотрон'), FALLBACK.question);
   assert.equal(replyTopic('   '), null);
+});
+
+test('noise, filler and unsure guesses get no answer', () => {
+  assert.equal(isWorthAnswering('а', 0.95), false);
+  assert.equal(isWorthAnswering('ну это вот', 0.95), false);
+  assert.equal(isWorthAnswering('привет', 0.3), false);
+  assert.equal(isWorthAnswering('да', 0.95), true);
+  assert.equal(isWorthAnswering('привет', 0.9), true);
+  assert.equal(isWorthAnswering('привет', undefined), true);
+});
+
+test('answers take turns and never repeat back to back', () => {
+  const picker = new ReplyPicker();
+  const reply = { topic: 't', phrases: ['a', 'b', 'c'] };
+  assert.deepEqual([1, 2, 3, 4].map(() => picker.next(reply)), ['a', 'b', 'c', 'a']);
+  const single = { topic: 's', phrases: ['a'] };
+  assert.equal(picker.next(single), 'a');                     // only one choice: it may repeat
+  assert.equal(picker.next(reply, (k) => k !== 'b'), 'c');    // unavailable clips are skipped
+  assert.equal(picker.next({ topic: 'x', phrases: ['c', 'a'] }), 'a');   // not «c» again right after «c»
+  assert.equal(picker.next({ topic: 'y', phrases: [] }), null);
 });
 
 test('a zip is repacked as a tar.gz with the same files', { skip: !hasZipTools() }, async () => {
