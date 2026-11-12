@@ -26,7 +26,8 @@ export const TRIGGER_PHRASES = {
   grabbedCursor: ['tancuem', 'druzhit', 'dai_ego', 'tsupa', 'habibi'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его!»,
                                         // «Иди сюда, малыш!», «Хабиби!»
   wokenUp: ['molchat', 'vody_kofe'],    // «Молчать, блядь», «Воды, блядь, нахуй! И нахуй кофе!»
-  clickSpam: ['eblan', 'klik', 'dolboeb'],   // «Блин, ты чё, еблан?», «…один ебаный клик», «Я что, на долбоёба похож?»
+  clickSpam: ['eblan', 'klik', 'dolboeb'],
+  quitAttempt: ['no', 'pochemu', 'dai_dai'],   // «Выход» chosen: «НО!», «Почему ты, блядь…», «Блядь, дай!»   // «Блин, ты чё, еблан?», «…один ебаный клик», «Я что, на долбоёба похож?»
   // the mascot's own floor actions
   sit: ['dura'],                        // «Сядь, дура толстая!»
   sleep: ['bayu'],                      // «Ох, баёшечки, баёшечки…»

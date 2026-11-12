@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <!-- Vosk's WebAssembly glue builds functions with `new Function` and runs in a blob: worker, so this hidden page
+       (and only this one) allows eval and blob: workers. It loads nothing from the network. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src blob:; connect-src chekushka-voice: data: blob:">
+  <title>Микрофон</title>
+</head>
+<body>
+  <script src="../node_modules/vosk-browser/dist/vosk.js"></script>
+  <script src="./voice-view.js"></script>
+</body>
+</html>

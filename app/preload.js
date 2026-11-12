@@ -24,4 +24,8 @@ contextBridge.exposeInMainWorld('mellstroy', {
   throwCursor: (request) => ipcRenderer.send('cursor:throw', request),
   wobbleCursor: (request) => ipcRenderer.send('cursor:wobble', request),
   nudgeCursor: (request) => ipcRenderer.send('cursor:nudge', request),
+  toggleVoice: () => ipcRenderer.send('voice:toggle'),
+  voiceHold: (seconds) => ipcRenderer.send('voice:hold', Number(seconds)),
+  onVoiceState: subscribe('voice-state'),
+  onVoiceHeard: subscribe('voice-heard'),
 });

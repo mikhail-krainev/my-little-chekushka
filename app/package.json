@@ -40,6 +40,8 @@
       "cursor.js",
       "screenshots.js",
       "updater/**/*",
+      "quit/**/*",
+      "voice/**/*",
       "src/**/*",
       "assets/**/*",
       "package.json"
@@ -53,9 +55,12 @@
       "extendInfo": {
         "LSUIElement": true,
         "NSAppleEventsUsageDescription": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ двигает папки на рабочем столе через Finder и возвращает их на место.",
+        "NSMicrophoneUsageDescription": "ЧЕКУШКА-МЕЛЛ слушает микрофон, только когда ты включаешь его кнопкой рядом с ним, и отвечает на твои фразы. Речь распознаётся на компьютере и никуда не отправляется.",
         "CFBundleDisplayName": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ"
       },
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
       "target": [
@@ -90,6 +95,7 @@
   },
   "dependencies": {
     "electron-updater": "6.8.11",
-    "koffi": "3.3.4"
+    "koffi": "3.3.4",
+    "vosk-browser": "0.0.8"
   }
 }

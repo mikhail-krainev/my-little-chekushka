@@ -3,11 +3,13 @@
 import { Bubble } from './bubble.mjs';
 import { MascotController } from './controller.mjs';
 import { describeEvent } from './events.mjs';
+import { MicButton } from './mic.mjs';
 import { Config } from './geometry.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { SearchBar } from './searchbar.mjs';
 import { Sfx } from './sfx.mjs';
 import { ShatterWorld } from './shatter.mjs';
+import { replyTopic } from './replies.mjs';
 import { PhrasePlayer, ShuffleBag } from './talk.mjs';
 import { BurstCounter, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent } from './triggers.mjs';
 import { drawSmokes, drawWorld } from './shatter-draw.mjs';
@@ -25,6 +27,15 @@ const AWAY_SECONDS = 180;
 const CHATTER_GAP = { min: 240, max: 540 };
 /** The greeting waits for the mascot to appear. */
 const GREETING_DELAY_MS = 2000;
+/** While the microphone is on it stays deaf this long past the end of his own phrase (echo from the speakers). */
+const SELF_ECHO_TAIL = 0.8;
+/** What the bubble says while the microphone gets ready or fails. */
+const MIC_CAPTIONS = {
+  downloading: (p) => `Качаю уши… ${Math.round(p * 100)}%`,
+  loading: () => 'Прочищаю уши…',
+  listening: () => 'Слушаю. Говори!',
+};
+const MIC_CAPTION_SECONDS = { downloading: 30, loading: 60, listening: 2.5, error: 6 };
 const DIRTY_MARGIN = 48;
 
 const api = window.mellstroy;
@@ -57,6 +68,8 @@ let triggerBags = {};               // trigger → ShuffleBag of its loaded clip
 const deletions = new BurstCounter(MASS_DELETE.count, MASS_DELETE.window);
 const clicks = new BurstCounter(CLICK_SPAM.count, CLICK_SPAM.window);
 const userReturn = new ReturnWatch(AWAY_SECONDS);
+const mic = new MicButton(clock);
+const replyBags = new Map();       // topic → ShuffleBag of its loaded clips
 
 const mouse = { down: false, dragging: false, start: { x: 0, y: 0 }, samples: [], inside: false };
 
@@ -89,6 +102,7 @@ function showBubble(text, duration) {
 /** Plays a clip (voice + talking face) with its text in the bubble, cutting off whatever was being said. */
 function say(clip) {
   if (!clip) return;
+  if (mic.isListening) api.voiceHold(clip.duration + SELF_ECHO_TAIL);
   phrases.play(clip);
   showBubble(clip.text, clip.duration + PHRASE_BUBBLE_TAIL);
   chatter.heard(clock() + clip.duration);
@@ -109,8 +123,30 @@ function sayFor(trigger, { requested = false, repeat = false } = {}) {
 }
 
 function onClick() {
+  mic.reveal();
   if (clicks.hit(clock())) say(triggerBags.clickSpam?.next()); else sayRandom();
 }
+
+/** A phrase that fits what the user said into the microphone. */
+function answer(text) {
+  const reply = replyTopic(text);
+  if (!reply) return;
+  if (!replyBags.has(reply.topic)) {
+    replyBags.set(reply.topic, new ShuffleBag(reply.phrases.map((key) => phrases.clip(key)).filter(Boolean)));
+  }
+  controller.wakeAndStare();
+  say(replyBags.get(reply.topic).next());
+}
+
+function onVoiceState(status) {
+  const wasPreparing = mic.status.state === 'downloading' || mic.status.state === 'loading';
+  mic.setStatus(status);
+  const caption = status.state === 'error' ? () => status.error : MIC_CAPTIONS[status.state];
+  if (!caption) { if (wasPreparing) bubble.hide(); return; }   // turned off: drop the progress caption
+  showBubble(caption(status.progress ?? 0), MIC_CAPTION_SECONDS[status.state]);
+}
+
+const micRect = () => mic.rect(controller.frame, screen.work);
 
 /** Something to fill a long silence, never in the middle of a phrase or in his sleep. */
 function chatterIfDue() {
@@ -151,7 +187,8 @@ function updateMouse() {
     }
   }
 
-  const wantCapture = mouse.down || over;
+  const overMic = mic.isVisible && inside(micRect(), cursor);
+  const wantCapture = mouse.down || over || overMic;
   if (wantCapture === ignoring) { ignoring = !wantCapture; api.setIgnoreMouse(ignoring); }
 }
 
@@ -191,6 +228,14 @@ function drawMascotLayer() {
   const rect = bubble.draw(mainCtx, { width, height, work: screen.work });
   mainCtx.restore();
   if (rect) dirty.push({ x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 });
+
+  if (mic.isVisible) {
+    const m = micRect();
+    mainCtx.save();
+    mainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dirty.push(mic.draw(mainCtx, m.x, height - (m.y + m.h)));
+    mainCtx.restore();
+  }
 
   mainCtx.save();
   mainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -286,18 +331,21 @@ async function start() {
   api.onSystemEvent(onSystemEvent);
   api.onTrigger((kind) => {
     if (kind === 'say') sayRandom();
-    else if (kind === 'foldersReset') sayFor('foldersReset', { requested: true });
+    else if (kind === 'foldersReset' || kind === 'quitAttempt') sayFor(kind, { requested: true });
     else controller.trigger(kind);
   });
   api.onSettings((next) => { settings = next; sfx.enabled = next.soundEffects !== false; });
   api.onFolderDrag((point) => controller.folderDragged(point));
   api.onLeftButton((down) => { if (!down) releaseMouse(); });
+  api.onVoiceState(onVoiceState);
+  api.onVoiceHeard(answer);
   api.onFolderOpened((rect) => controller.peekInto(rect));
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     if (inside(controller.frame, cursor)) api.showMenu();
   });
   window.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && mic.isVisible && inside(micRect(), cursor)) { mic.reveal(); api.toggleVoice(); return; }
     if (e.button !== 0 || !inside(controller.frame, cursor)) return;
     mouse.down = true; mouse.dragging = false; mouse.start = { ...cursor };
     mouse.samples = [{ time: clock(), point: { ...cursor } }];

@@ -7,6 +7,8 @@ const { Settings } = require('./settings');
 const { makeStationary } = require('./stationary');
 const { SystemWatcher } = require('./watcher');
 const { startUpdates } = require('./updater');
+const { QuitDialog } = require('./quit');
+const { VoiceService, registerVoiceScheme } = require('./voice');
 
 const CURSOR_POLL_MS = 16;
 const TRAY_SIZE = 18;
@@ -50,11 +52,15 @@ let folderDrag = null;
 let buttonReadFailed = false;
 let desktopFolders = null;
 let updates = null;              // UpdateManager, null when this build cannot update itself
+let quitDialog = null;           // the runaway «Выйти» overlay
+let voice = null;                // microphone and speech recognition (voice/)
 
 function screenshotsDir() {
   const i = process.argv.indexOf('--screenshots');
   return i > 0 ? path.resolve(process.argv[i + 1] ?? 'screenshots') : null;
 }
+
+registerVoiceScheme();
 
 // Phrases are also started from the tray menu, where there is no click in the page to unlock audio.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -195,7 +201,7 @@ function menuTemplate() {
     },
     { type: 'separator' },
     ...updateMenu(),
-    { label: 'Выход', click: () => app.quit() },
+    { label: 'Выход', click: () => quitDialog.open() },
   ];
 }
 
@@ -288,6 +294,17 @@ ipcMain.on('cursor:wobble', (_e, request) => {
   catch (err) { console.error('cursor wobble failed:', err.message); }
 });
 ipcMain.on('cursor:nudge', (_e, request) => nudgeCursor(request));
+const fromMascot = (event) => Boolean(win && event.sender === win.webContents);
+ipcMain.on('voice:toggle', (event) => { if (fromMascot(event)) voice?.toggle(); });
+ipcMain.on('voice:hold', (event, seconds) => { if (fromMascot(event)) voice?.hold(Number(seconds)); });
+
+function startVoice() {
+  voice = new VoiceService({
+    dir: path.join(app.getPath('userData'), 'voice'),
+    onState: (status) => win?.webContents.send('voice-state', status),
+    onHeard: (text) => win?.webContents.send('voice-heard', text),
+  });
+}
 
 app.whenReady().then(async () => {
   const shotsDir = screenshotsDir();
@@ -305,6 +322,8 @@ app.whenReady().then(async () => {
   currentDisplay = screen.getPrimaryDisplay();
   settings = new Settings(app.getPath('userData'));
   createWindow(currentDisplay);
+  quitDialog = new QuitDialog({ onOpen: () => sendTrigger('quitAttempt') });
+  startVoice();
   startDesktop();
   createTray();
   updates = startUpdates({ onChange: rebuildTrayMenu });
@@ -322,5 +341,6 @@ app.on('before-quit', () => {
   folderWindows?.stop();
   desktop?.dispose();
   updates?.stop();
+  voice?.dispose();
   clearInterval(cursorTimer);
 });
