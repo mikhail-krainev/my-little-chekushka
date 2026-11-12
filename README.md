@@ -32,13 +32,13 @@
 
 ## Установка
 
-Текущий опубликованный релиз — **v1.4.0**. Выберите установщик для своей системы:
+Текущий опубликованный релиз — **v1.5.0**. Выберите установщик для своей системы:
 
 | Система | Скачать |
 |:---|:---|
-| Windows 10/11, x64 | [Chekushka-1.4.0-win-x64.exe](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.4.0/Chekushka-1.4.0-win-x64.exe) |
-| macOS 13+, Apple Silicon | [Chekushka-1.4.0-mac-arm64.pkg](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.4.0/Chekushka-1.4.0-mac-arm64.pkg) |
-| macOS 13+, Intel | [Chekushka-1.4.0-mac-x64.pkg](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.4.0/Chekushka-1.4.0-mac-x64.pkg) |
+| Windows 10/11, x64 | [Chekushka-1.5.0-win-x64.exe](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.5.0/Chekushka-1.5.0-win-x64.exe) |
+| macOS 13+, Apple Silicon | [Chekushka-1.5.0-mac-arm64.pkg](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.5.0/Chekushka-1.5.0-mac-arm64.pkg) |
+| macOS 13+, Intel | [Chekushka-1.5.0-mac-x64.pkg](https://github.com/mikhail-krainev/my-little-chekushka/releases/download/v1.5.0/Chekushka-1.5.0-mac-x64.pkg) |
 
 <sub>Ранее опубликованные сборки и технические имена установщиков сохраняют название Chekushka. Новое название проекта и маскота — «ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ». Изменения в исходниках попадают в установщики после выпуска нового релиза.</sub>
 
