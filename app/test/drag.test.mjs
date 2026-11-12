@@ -51,7 +51,7 @@ test('folder pursuit runs toward the moving target, speaks once and stops on dro
   assert.deepEqual(events, ['folderDragged']);
   c.folderDragged(null);
   assert.equal(c.state.type, 'idle');
-  assert.deepEqual(TRIGGER_PHRASES.folderDragged, ['dai_ego']);
+  assert.ok(TRIGGER_PHRASES.folderDragged.includes('dai_ego'));
 });
 
 test('folder pursuit never takes over a mascot being carried', () => {

@@ -5,49 +5,53 @@
 export const TRIGGER_PHRASES = {
   // the system (files and apps)
   folderCreated: ['vozna'],             // «Пошла валютная возня»
-  fileDownloaded: ['babki'],            // «Бабки рулятся, движуха мутится»
-  screenshot: ['normaldy'],             // «Ха-ха-ха! Это пизда! И ведь нормалды!»
-  fileCreated: ['nihuya'],              // «Нихуя себе. И вправду потужненько»
+  fileDownloaded: ['babki', 'millionov'],   // «Бабки рулятся…», «Пять миллионов долларов за три грёбаных часа!»
+  screenshot: ['normaldy', 'krasavchik', 'imenno'],   // «…И ведь нормалды!», «Красавчик… охуенно», «Да, да, именно это!»
+  fileCreated: ['nihuya', 'ne_byvaet'], // «Нихуя себе. И вправду потужненько», «Ну нахуй! Такого не бывает!»
   fileDeleted: ['babok'],               // «Бабок, сука, больше нет. Блядь»
   massDelete: ['miliciya', 'policiya'], // «Суд! Милиция! Помогите!», «Пизда мне. Меня нашла полиция…»
-  browserLaunched: ['stavki'],          // «Только ставки: футбол, хуйбол…»
+  browserLaunched: ['stavki', 'levov'], // «Только ставки: футбол, хуйбол…», «Надо пять левов на Баликина!»
   messengerLaunched: ['ty_tut'],        // «Привет, ты тут? Я тут. Привет, спишь?»
-  codeLaunched: ['kommentirovat', 'chto_delat'],   // «Я не знаю, как это комментировать», «Что, блядь, нужно делать?»
-  appLaunched: ['bystree'],             // «Быстрее!»
+  codeLaunched: ['kommentirovat', 'chto_delat', 'zavtra'],   // «…как это комментировать», «Что нужно делать?», «Давай завтра…»
+  appLaunched: ['bystree', 'baba_bystree'],   // «Быстрее!», «Баба, быстрее!»
   appQuit: ['pohuy'],                   // «Да похуй, ну и ладно»
-  userBack: ['zhivoy', 'normalno', 'zhirny'],     // «Живой», «Нормально всё?», «Здорово, жирный!»: after a long pause
-  appStart: ['privet', 'rebyata'],      // «Привет, дорогие зрители и подписчики…», «Ребята, ребята, всем привет!»
+  userBack: ['zhivoy', 'normalno', 'zhirny', 'tolstyy', 'kislyy'],   // «Живой», «Нормально всё?», «Здорово, жирный!»,
+                                        // «Толстый-то тут?», «Чё кислый такой?»: after a long pause
+  appStart: ['privet', 'rebyata', 'na_svyazi'],   // «Привет, дорогие зрители…», «Ребята, всем привет!», «На связи, птенцы»
   // what the user does to the mascot
   pickedUp: ['no'],                     // «НО!» — the short initial pickup shout; complaints follow every 3–5 seconds.
-  dragComplaint: ['no', 'zaebal', 'eblan', 'ne_govori'],
+  dragComplaint: ['no', 'zaebal', 'eblan', 'ne_govori', 'stop', 'psihopat'],
   thrown: ['aaa'],                      // «А! А! А! Бля!»
-  hitWall: ['ne_govori'],               // «Не говори таких слов при мне, блядь»
-  grabbedCursor: ['tancuem', 'druzhit', 'dai_ego'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его, блядь!»
-  wokenUp: ['molchat'],                 // «Молчать, блядь»
-  clickSpam: ['eblan', 'klik'],         // «Блин, ты чё, еблан?», «…вам это один ебаный клик»
+  hitWall: ['ne_govori', 'blyat_nahuy'],   // «Не говори таких слов при мне, блядь», «Блядь, нахуй!»
+  grabbedCursor: ['tancuem', 'druzhit', 'dai_ego', 'tsupa', 'habibi'],   // «Танцуем все!», «Дружить не хочешь?», «Дай его!»,
+                                        // «Иди сюда, малыш!», «Хабиби!»
+  wokenUp: ['molchat', 'vody_kofe'],    // «Молчать, блядь», «Воды, блядь, нахуй! И нахуй кофе!»
+  clickSpam: ['eblan', 'klik', 'dolboeb'],   // «Блин, ты чё, еблан?», «…один ебаный клик», «Я что, на долбоёба похож?»
   // the mascot's own floor actions
   sit: ['dura'],                        // «Сядь, дура толстая!»
   sleep: ['bayu'],                      // «Ох, баёшечки, баёшечки…»
-  stretch: ['den_shestoy'],             // «День шестой… будем идти вперёд»
+  stretch: ['den_shestoy', 'zhara'],    // «День шестой… будем идти вперёд», «Жара ебаная!»
   smoke: ['zhestko'],                   // «Блядь, это жёстко!» after the first drag
   hookah: ['poebat'],                   // «…Мне как-то поебать вообще» after the first pull
-  spit: ['korova'],                     // «Да пошла ты нахуй, блядь, корова ебаная!»
-  drunk: ['baba', 'baba_dyrka', 'polnaya', 'baba_suka', 'ne_zhri'],   // after vodka or beer, kept down
-  burger: ['detka'],                    // bragging about the burger: «О да, у да, детка, ты такая сладкая конфетка»
-  pizza: ['fu', 'pochemu'],             // the plastic pizza: «Что это за хуйня, блядь? Фу, блядь»
-  vomit: ['pizdec'],                    // «Да ну нахуй, да это пиздец!»
+  spit: ['harchek'],                    // the real hawk and «тьфу», said as the scene starts so it lands on the release
+  drunk: ['baba', 'baba_dyrka', 'polnaya', 'baba_suka', 'ne_zhri', 'krasny', 'shcheki'],   // after vodka or beer, kept down
+  burger: ['detka', 'tolstaya_morda', 'kto_luchshiy'],   // bragging about the burger: «…сладкая конфетка», a full happy
+                                        // face, «Кто лучший? Да я знаю»
+  pizza: ['fu', 'pochemu', 'nasri'],    // the plastic pizza: «Что это за хуйня? Фу», «…попробуй говно на вкус»
+  vomit: ['pizdec', 'drugaya_dyrka', 'govno_vonyaet'],   // «Да это пиздец!», «Он с другой дырки вылез», «Говно воняет»
   // desktop pranks
-  folderPeek: ['eto_on', 'o_blyat'],              // peeks into a folder window: «Это он, это реально он!», «О, блядь»
-  folderDragged: ['dai_ego'],                    // chases the folder the user is dragging
+  folderPeek: ['eto_on', 'o_blyat', 'podozritelno'],   // peeks into a folder window: «Это он!», «О, блядь», a suspicious stare
+  folderDragged: ['dai_ego', 'dai_dai'],         // chases the folder the user is dragging: «Дай его!», «Дай, блядь!»
   folderPush: ['nu_voznya'],                      // pushes a folder icon: «Ну, пошла возня»
   cursorFight: ['specnaz'],                       // boxes the cursor: «Работай, спецназ! Работай, спецназ!»
-  foldersReset: ['ne_volnuysya'],                 // folders put back: «Не волнуйся, маленький, всё будет хорошо»
-  cursorThrown: ['pyos'],                         // flings the cursor: «Да иди ты нахуй, ты иди нахуй, пёс моя паршивая»
+  foldersReset: ['ne_volnuysya', 'vse_budet'],    // folders put back: «Не волнуйся, маленький…», «Всё будет хорошо»
+  cursorThrown: ['pyos', 'korova'],               // flings the cursor: «…пёс моя паршивая», «…корова ебаная!»
   searchAngry: ['zaebal', 'zhizn'],               // knocked off the search bar: «Заебал, урод ты заморский!»
   // now and then, to fill the silence
   chatter: [
     'angel', 'palaich', 'klyuch', 'tualet', 'monitor', 'bandera', 'pantera', 'kashiki', 'parashyut',
     'shut_master', 'kak_chlen', 'poroshki', 'pavlov', 'olivie', 'tiktoker', 'maks_summa', 'nastya', 'degradaciya',
+    'sinyaki', 'gey', 'dron', 'lyahov', 'sverchki', 'mama_ptica', 'muzhika',
   ],
 };
 

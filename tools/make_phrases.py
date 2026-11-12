@@ -3,6 +3,9 @@
 
 usage: python3 -I tools/make_phrases.py <footage_dir> <app_dir>
 
+<footage_dir> is searched recursively; a video is found by its TikTok id whatever the downloader named it
+(TikVideo.App_<id>-hd.mp4, SaveTik.io_<id>_hd.mp4, ...).
+
 For every entry in CLIPS it cuts the phrase once (the source videos loop the phrase, only the first take is used),
 writes `assets/phrases/<key>.ogg` and a pixelated face sprite sheet `assets/phrases/<key>.png`
 (frames side by side, FACE_W x FACE_H art pixels each), and finally `src/phrase-clips.mjs` with the clip table.
@@ -13,6 +16,7 @@ without redrawing the bottle.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -101,6 +105,44 @@ CLIPS = [
     ("klik", "7701762046991338759", 0.00, 7.24, "Я реально прошу вас: вам это один ебаный клик, а я сломал колени."),
     ("degradaciya", "7705091110380653832", 0.00, 2.62, "Седьмая стадия деградации: когнитивный спад."),
     ("normalno", "7705502034677583111", 0.00, 1.00, "Нормально всё?"),
+    # third batch
+    ("kto_luchshiy", "7621558757746593031", 0.20, 8.00, "Кто лучший? Кто лучший? Да я знаю."),
+    ("ne_byvaet", "7622677009826598152", 0.00, 4.50, "Ну нахуй! Такого не бывает! Ты пиздишь!"),
+    ("tsupa", "7625670928684305672", 0.00, 6.05, "Цупа-цупа-цупа… Иди сюда, бля, малыш, иди сюда! Цупи-цупи, бля."),
+    ("vody_kofe", "7627099328397495570", 0.00, 6.20, "Дай бабу, блядь, нахуй! Воды, блядь, нахуй! И нахуй кофе, блядь!"),
+    ("drugaya_dyrka", "7627826231483976978", 0.00, 6.40, "Ай, блядь! Он вообще с другой дырки вылез, блядь."),
+    ("habibi", "7627890289239149831", 0.00, 4.20, "Хабиби! Хабиби! Хабиби!"),
+    ("zavtra", "7628296652243209490", 0.00, 4.65, "Давай завтра, завтра, блядь, завтра нахуй, послезавтра, блядь, завтра нахуй."),
+    ("psihopat", "7628666836615335176", 0.00, 11.60, "Проблема твоя в том, что я психопат! У меня приступы агрессии такие! Я возьму тебя за губу, а возьму за вторую и оторву, блядь!"),
+    ("sinyaki", "7630478526508059912", 0.00, 11.30, "Баба без синяков — недочёт мужика. Это да, блядь. У него синяки все исчезли, блядь. Шрамы остались на ногах."),
+    ("govno_vonyaet", "7632040839715376391", 0.00, 5.05, "Баба, баба ебаная, сука! Говно воняет."),
+    ("tolstyy", "7632290343332908295", 0.00, 4.94, "Толстый-то тут, ну? Толстый-то тут? Да-да-да-да. Полетели, масса."),
+    ("gey", "7633174801116335378", 0.00, 5.25, "Я гей… Гей… Ага, уа! Гей… Бля…"),
+    ("dron", "7636818156392123655", 0.00, 6.84, "Те видел? Тёмный дрон. — Не, а шо такое тёмный дрон? Расскажи, братик, ты про что?"),
+    ("lyahov", "7636910991212825874", 0.00, 6.30, "Криво пукнул, обосрался, и говно на ляхах. Григорий Ляхов, позор судьбы."),
+    ("imenno", "7637240714606267655", 0.60, 5.55, "Да, да, да, да, да, именно это! Да, да, да, да, да!"),
+    ("baba_bystree", "7637526969957092616", 0.00, 1.70, "Баба, быстрее! Баба, быстрее!"),
+    ("podozritelno", "7639735538747985170", 0.00, 6.50, "*подозрительно смотрит*"),
+    ("nasri", "7639742157116460296", 0.00, 8.20, "А насри в руки себе и попробуй говно на вкус. Убедись, что точно так, блятина. Если да, то просто больше ешь, лучше воды пей."),
+    ("levov", "7643567866029067528", 0.00, 7.45, "Бля-а-адь, надо пять левов на Баликина!"),
+    ("shcheki", "7646892426681945352", 0.00, 6.20, "*надувает щёки*"),
+    ("sverchki", "7646897552557657362", 0.00, 6.60, "*стрекочут сверчки*"),
+    ("stop", "7646901093816896776", 0.35, 5.95, "О, стоп! Я кончаю! Я кончаю! Блядь!"),
+    ("millionov", "7647231993813486866", 0.00, 9.20, "Пять миллионов долларов за три грёбаных часа! Это Уолл-стрит нахуй. Ну, точнее, три миллиона долларов за сорок ёбаных минут!"),
+    ("dolboeb", "7649903115025599762", 0.00, 5.35, "Я что, долбоёб, что ли? Нет, я что, на долбоёба похож? Нет, нихуя я не долбоёб."),
+    ("zhara", "7650623871493639431", 2.70, 5.18, "Ебаная жара, жара ебаная, ебливая!"),
+    ("tolstaya_morda", "7653590766899563794", 0.00, 5.70, "*жуёт с довольной мордой*"),
+    ("mama_ptica", "7655001892082306322", 0.00, 5.55, "Я мама-птица, блядь. Что ты, что ты, чёрт побери, такое несёшь?"),
+    ("muzhika", "7656144525743754514", 2.20, 4.30, "Да мужика!"),
+    ("krasavchik", "7656432060378221842", 0.00, 5.95, "Блядь, сука, красавчик, блядь! Это реально охуенно, блядь, это просто охуительно вообще."),
+    ("blyat_nahuy", "7656452040868072711", 0.00, 1.00, "Блядь, нахуй!"),
+    ("vse_budet", "7658765428948290834", 3.55, 5.85, "Всё будет хорошо."),
+    ("dai_dai", "7658773591713910024", 0.00, 5.40, "Блядь, дай! Дай, блядь! Если б дал…"),
+    ("na_svyazi", "7659097048960077063", 0.00, 5.40, "На связи, птенцы. У-у-у, да, детка, ты такая сладкая конфетка."),
+    ("krasny", "7660487212470930695", 0.00, 7.40, "Бля, какого хуя красный такой? — Не пьёшь? — Типа от вина? — Ну. — Может, мне жарко?"),
+    ("kislyy", "7660547100542881031", 0.00, 5.50, "Чё кислый такой? Маму твою выебал без гандона. И заболел нахуй спидом нахуй."),
+    # the spit: cut so the real «тьфу» lands on the animation's release (SPIT_RELEASE = 2.05 s into the scene)
+    ("harchek", "7669472686409518356", 1.55, 4.70, "Кх-кх-кххх… Тьфу!"),
 ]
 
 
@@ -290,9 +332,22 @@ def write_audio(video, start, end, path):
                     "-vn", "-ac", "1", "-ar", "48000", "-af", filters, "-c:a", "libopus", "-b:a", "48k", path], check=True)
 
 
-def build_clip(footage_dir, out_dir, head, mean, std, detectors, clip):
+def find_videos(footage_dir):
+    """TikTok id -> path of the first .mp4 under `footage_dir` whose name holds that id (copies like "(1)" lose)."""
+    found = {}
+    for root, _, files in sorted(os.walk(footage_dir)):
+        for name in sorted(files, key=lambda n: ("(" in n, n)):
+            match = re.search(r"(\d{19})", name)
+            if name.lower().endswith(".mp4") and match:
+                found.setdefault(match.group(1), os.path.join(root, name))
+    return found
+
+
+def build_clip(videos, out_dir, head, mean, std, detectors, clip):
     key, vid, start, end, text = clip
-    video = os.path.join(footage_dir, f"TikVideo.App_{vid}-hd.mp4")
+    if vid not in videos:
+        raise SystemExit(f"no video with id {vid}")
+    video = videos[vid]
     frames = read_frames(video, start, end)
     found = [head_box(f, key_green(f)[1], detectors) for f in frames]
     if all(b is None for b in found):
@@ -314,10 +369,11 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     detectors = load_detectors()
     head, mean, std = mascot_head(os.path.join(app_dir, "assets", "sprites", "body.png"))
+    videos = find_videos(footage_dir)
     table = []
     for clip in CLIPS:
         try:
-            table.append(build_clip(footage_dir, out_dir, head, mean, std, detectors, clip))
+            table.append(build_clip(videos, out_dir, head, mean, std, detectors, clip))
         except SystemExit as err:            # one bad clip (no face, missing file) must not lose the rest
             print(f"SKIPPED {clip[0]}: {err}", file=sys.stderr)
     for t in table:

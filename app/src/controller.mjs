@@ -19,8 +19,9 @@ const BLEND_TIME = 0.22;
 const THROWN_SPEED = 1100;
 /** Hitting a screen edge at least this fast (px/s) is worth a word. */
 const WALL_HIT_SPEED = 700;
-/** Floor actions announced as they start; smoking ones speak after the first drag instead (see #fireCues). */
-const SPOKEN_AT_START = new Set(['sit', 'sleep', 'stretch']);
+/** Floor actions announced as they start; smoking ones speak after the first drag instead (see #fireCues). Spitting
+ *  speaks at the start too: its clip is the hawk itself, cut so the «тьфу» lands on the release. */
+const SPOKEN_AT_START = new Set(['sit', 'sleep', 'stretch', 'spit']);
 /** Actions done facing the working side. */
 const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza']);
 /** How far (px) the mascot's front reaches over the edge of a folder window he peeks into. */
@@ -447,7 +448,7 @@ export class MascotController {
       const pose = Animator.performance(perf, cue.at, base);
       switch (cue.type) {
         case 'throw': this.#throwBottle(perf, pose); break;
-        case 'spit': this.#spit(pose); this.#announce(perf, 'spit'); break;
+        case 'spit': this.#spit(pose); break;
         case 'vomit': case 'drunk': case 'burger': case 'pizza': this.#announce(perf, cue.type); break;
         case 'toss': this.#toss(perf, pose, cue.item); break;
         case 'exhale':

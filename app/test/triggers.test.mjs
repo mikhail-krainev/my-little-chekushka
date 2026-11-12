@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { cues, makePerformance } from '../src/animator.mjs';
+import { SPIT_RELEASE, cues, makePerformance } from '../src/animator.mjs';
 import { PHRASE_CLIPS } from '../src/phrase-clips.mjs';
 import {
   BurstCounter, COOLDOWNS, ChatterClock, ReturnWatch, TRIGGER_PHRASES, TriggerGate, classifySystemEvent,
@@ -133,6 +133,15 @@ test('every menu action speaks exactly once, marked as asked for by the user', a
     assert.equal(said[0].requested, true, kind);
     if (kind === 'smoke' || kind === 'hookah') assert.ok(said[0].at - start > 1, `${kind} speaks after the first drag`);
   }
+});
+
+test('spitting speaks as the scene starts, so the recorded «тьфу» lands on the release', async () => {
+  const { events, start } = await simulate((c) => c.trigger('spit'));
+  const said = events.filter((e) => e.name === 'spit');
+  assert.equal(said.length, 1);
+  assert.ok(said[0].at - start < 0.1, `spoke ${said[0].at - start}s into the scene`);
+  const harchek = PHRASE_CLIPS.find((c) => c.key === 'harchek');
+  assert.ok(harchek.duration > SPIT_RELEASE, 'the clip outlasts the release');
 });
 
 test('an action chosen while he is held starts after he is let go and lands', async () => {
