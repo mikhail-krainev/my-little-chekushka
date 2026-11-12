@@ -48,7 +48,9 @@ jobs:
               export ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
               echo "using npmmirror.com"
             fi
-            npm run ${{ matrix.script }} -- --publish never && exit 0
+            # the scripts already pass --publish never; passing it again turns it into a list that electron-builder
+            # ignores, and it then tries to upload to GitHub without a token
+            npm run ${{ matrix.script }} && exit 0
             echo "attempt $attempt failed, retrying"; sleep 20
           done
           exit 1
