@@ -15,7 +15,8 @@
     "dist:mac": "electron-builder --mac --arm64 --publish never && electron-builder --mac --x64 --publish never",
     "dist:win": "electron-builder --win",
     "dist": "electron-builder",
-    "showcase": "electron showcase.js ../docs/screenshots"
+    "showcase": "electron showcase.js ../docs/screenshots",
+    "showcase:desktop": "electron showcase.js ../docs/screenshots --desktop"
   },
   "devDependencies": {
     "electron": "^45.2.3",
