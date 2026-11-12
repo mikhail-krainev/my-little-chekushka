@@ -1,7 +1,7 @@
 {
   "name": "chekushka",
   "productName": "Чекушка",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ — пиксельный питомец для рабочего стола macOS и Windows",
   "main": "main.js",
   "author": "mikhail-krainev",
