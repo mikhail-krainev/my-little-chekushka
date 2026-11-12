@@ -2,7 +2,7 @@
   "name": "chekushka",
   "productName": "Чекушка",
   "version": "1.2.0",
-  "description": "Desktop pet «Чекушка Мировая №67» for macOS and Windows",
+  "description": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ — пиксельный питомец для рабочего стола macOS и Windows",
   "main": "main.js",
   "author": "mikhail-krainev",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "predist:mac": "npm install --no-save --force --no-audit --no-fund @koromix/koffi-darwin-arm64@3.3.4 @koromix/koffi-darwin-x64@3.3.4",
     "dist:mac": "electron-builder --mac --arm64 --publish never && electron-builder --mac --x64 --publish never",
     "dist:win": "electron-builder --win",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "showcase": "electron showcase.js ../docs/screenshots"
   },
   "devDependencies": {
     "electron": "^45.2.3",
@@ -48,7 +49,8 @@
       ],
       "extendInfo": {
         "LSUIElement": true,
-        "NSAppleEventsUsageDescription": "Чекушка двигает папки на рабочем столе через Finder и возвращает их на место."
+        "NSAppleEventsUsageDescription": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ двигает папки на рабочем столе через Finder и возвращает их на место.",
+        "CFBundleDisplayName": "ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ"
       },
       "icon": "build/icon.icns"
     },

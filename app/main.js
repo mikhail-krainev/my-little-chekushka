@@ -203,7 +203,7 @@ function rebuildTrayMenu() {
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png')).resize({ width: TRAY_SIZE, height: TRAY_SIZE });
   tray = new Tray(icon);
-  tray.setToolTip('Чекушка');
+  tray.setToolTip('ЧЕКУШКА-МЕЛЛ: МОЙ МИЛЫЙ ПИТОМЕЦ');
   rebuildTrayMenu();
 }
 
