@@ -70,6 +70,7 @@ const clicks = new BurstCounter(CLICK_SPAM.count, CLICK_SPAM.window);
 const userReturn = new ReturnWatch(AWAY_SECONDS);
 const mic = new MicButton(clock);
 const replies = new ReplyPicker();
+let voiceHoldUntil = 0;
 
 const mouse = { down: false, dragging: false, start: { x: 0, y: 0 }, samples: [], inside: false };
 
@@ -104,7 +105,9 @@ function showBubble(text, duration) {
  *  microphone is on he talks only to answer the user (`always`: answers and the quit window's taunts). */
 function say(clip, { always = false } = {}) {
   if (!clip || (mic.isOn && !always)) return;
-  if (mic.isListening) api.voiceHold(clip.duration + SELF_ECHO_TAIL);
+  const holdSeconds = clip.duration + SELF_ECHO_TAIL;
+  voiceHoldUntil = clock() + holdSeconds;
+  if (mic.isListening) api.voiceHold(holdSeconds);
   phrases.play(clip);
   showBubble(clip.text, clip.duration + PHRASE_BUBBLE_TAIL);
   chatter.heard(clock() + clip.duration);
@@ -131,7 +134,7 @@ function onClick() {
 
 /** A phrase that fits what the user said into the microphone; noise and mumbling get no answer. */
 function answer({ text, confidence }) {
-  if (!isWorthAnswering(text, confidence)) return;
+  if (!mic.isListening || clock() < voiceHoldUntil || phrases.isTalking || !isWorthAnswering(text, confidence)) return;
   const reply = replyTopic(text);
   if (!reply) return;
   const key = replies.next(reply, (k) => phrases.clip(k) !== null);
@@ -141,7 +144,10 @@ function answer({ text, confidence }) {
 
 function onVoiceState(status) {
   const wasPreparing = mic.status.state === 'downloading' || mic.status.state === 'loading';
+  const wasListening = mic.isListening;
   mic.setStatus(status);
+  const remainingHold = voiceHoldUntil - clock();
+  if (!wasListening && mic.isListening && remainingHold > 0) api.voiceHold(remainingHold);
   const caption = status.state === 'error' ? () => status.error : MIC_CAPTIONS[status.state];
   if (!caption) { if (wasPreparing) bubble.hide(); return; }   // turned off: drop the progress caption
   showBubble(caption(status.progress ?? 0), MIC_CAPTION_SECONDS[status.state]);
