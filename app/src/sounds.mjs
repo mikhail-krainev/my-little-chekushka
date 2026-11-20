@@ -3,6 +3,7 @@
 import { SPIT_RELEASE, STRETCH_DURATION, drinkTimeline } from './animator.mjs';
 import { BURGER_SCENE, PIZZA_SCENE } from './eating.mjs';
 import { HOOKAH, SMOKE } from './smoking.mjs';
+import { FLOAT } from './play.mjs';
 
 /** Sounds `{ at, name, gain? }` every `step` seconds from `from` while before `to`. */
 const every = (from, to, step, name, gain) => {
@@ -109,6 +110,38 @@ export function soundCues(perf) {
     case 'hookah': list = hookahSounds(); break;
     case 'burger': list = burgerSounds(); break;
     case 'pizza': list = pizzaSounds(); break;
+    case 'slots': {
+      const { rounds, stand, backUp, charge, takeoff, hit, land } = perf.slots;
+      list = [
+        { at: 0.6, name: 'thud', gain: 0.55 },
+        ...rounds.flatMap(({ pull, spin, stop, win }) => [
+          { at: pull + 0.19, name: 'clack' },
+          { at: spin, name: 'spring' },
+          ...every(spin, stop, 0.13, 'click', 0.55),
+          { at: stop - 0.36, name: 'clack', gain: 0.7 },
+          { at: stop - 0.18, name: 'clack', gain: 0.85 },
+          { at: stop, name: win ? 'chime' : 'clack' },
+        ]),
+        { at: stand + 0.5, name: 'stomp' },
+        ...every(backUp + 0.14, charge, 0.24, 'step', 0.65),
+        ...every(charge + 0.12, takeoff, 0.14, 'step', 1.25),
+        { at: takeoff, name: 'whoosh' },
+        { at: hit, name: 'punch', gain: 1.2 },
+        { at: hit, name: 'shatter' },
+        { at: hit + 0.46, name: 'land' },
+        { at: land, name: 'cabinetCrash' },
+        { at: land + 0.18, name: 'scrape' },
+        { at: land + 0.36, name: 'clack', gain: 0.75 },
+      ];
+      break;
+    }
+    case 'float': list = [
+      { at: 0.18, name: 'flap' },
+      { at: 0.58, name: 'grab', gain: 0.75 },
+      ...FLOAT.catches.map((at) => ({ at, name: 'vinylCreak' })),
+      { at: FLOAT.on, name: 'pop', gain: 0.65 },
+      { at: FLOAT.settle, name: 'land' },
+    ]; break;
     default: list = [];
   }
   return list.filter((s) => s.at >= 0 && s.at < perf.duration).sort((a, b) => a.at - b.at);

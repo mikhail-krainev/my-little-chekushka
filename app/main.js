@@ -24,6 +24,8 @@ const ACTIONS = [
   { label: 'Покурить кальян', kind: 'hookah' },
   { label: 'Съесть бургер', kind: 'burger' },
   { label: 'Съесть пиццу', kind: 'pizza' },
+  { label: 'Сыграть в слот-автомат', kind: 'slots' },
+  { label: 'Побегать в спасательном круге', kind: 'float' },
   { label: 'Сказать фразу', kind: 'say' },
   { label: 'Подвинуть папку', kind: 'pushFolder', setting: 'moveFolders' },
   { label: 'Выкинуть курсор', kind: 'throwCursor', setting: 'throwCursor' },

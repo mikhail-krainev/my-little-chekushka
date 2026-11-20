@@ -5,8 +5,9 @@ import { aimAtMouth, bump, ease, mix, mouthSwing, seg, swing } from './motion.mj
 import { HOOKAH, SMOKE, hookah, smoke } from './smoking.mjs';
 import { tipDistance } from './props.mjs';
 import { BURGER_SCENE, PIZZA_SCENE, burger, pizza } from './eating.mjs';
+import { FLOAT, FLOAT_STRIDE, floatPose, slots, slotTimeline } from './play.mjs';
 
-export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza'];
+export const PERFORMANCE_KINDS = ['sit', 'sleep', 'stretch', 'vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza', 'slots', 'float'];
 /** Chance that a drinker is sick after the bottle. */
 export const VOMIT_CHANCE = 0.5;
 export const STRETCH_DURATION = 11.6;
@@ -24,7 +25,7 @@ export { seg, ease, bump, mix, swing } from './motion.mjs';
 const fist = swing;
 
 /** A scripted action that runs on the floor. `side` +1 acts toward the right (working arm is the right one), -1 mirrored. */
-export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vomits = Math.random() < VOMIT_CHANCE } = {}) {
+export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vomits = Math.random() < VOMIT_CHANCE, wins } = {}) {
   let duration, sick = false;
   switch (kind) {
     case 'sit': duration = 1.1 + rand(3, 6); break;
@@ -36,6 +37,11 @@ export function makePerformance(kind, { side = Math.random() < 0.5 ? 1 : -1, vom
     case 'hookah': duration = HOOKAH.end; break;
     case 'burger': duration = BURGER_SCENE.end; break;
     case 'pizza': duration = PIZZA_SCENE.end; break;
+    case 'slots': {
+      const timeline = slotTimeline(wins ?? (Math.random() < 0.5 ? 1 : 2));
+      return { kind, duration: timeline.end, side, slots: timeline };
+    }
+    case 'float': duration = FLOAT.end; break;
     default: throw new Error(`unknown performance: ${kind}`);
   }
   return { kind, duration, side, vomits: sick };
@@ -144,7 +150,7 @@ export function hanging(t, swingAngle, base) {
 
 // MARK: Scenes on the floor
 
-export function performance(perf, t, base) {
+export function performance(perf, t, base, motion) {
   const d = perf.duration;
   let p;
   switch (perf.kind) {
@@ -158,6 +164,13 @@ export function performance(perf, t, base) {
     case 'hookah': p = hookah(t, perf.side, base); break;
     case 'burger': p = burger(t, perf.side, base); break;
     case 'pizza': p = pizza(t, perf.side, base); break;
+    case 'slots': p = slots(t, perf, base, walk); break;
+    case 'float': {
+      const dir = motion?.x ?? perf.side;
+      const stride = t >= FLOAT.run && t < FLOAT.settle ? walk((t - FLOAT.run) * FLOAT_STRIDE, dir, true, base) : null;
+      p = floatPose(t, dir, base, motion, stride);
+      break;
+    }
     default: throw new Error(`unknown performance: ${perf.kind}`);
   }
   p.time = t;
@@ -297,6 +310,11 @@ export function cues(perf) {
       { at: HOOKAH.firstPuff + i * HOOKAH.cycle + HOOKAH.exhaleAt, type: 'exhale', size: 1, life: HOOKAH.cloudLife, drift: -1 }));
     case 'burger': return [{ at: BURGER_SCENE.brag, type: 'burger' }];
     case 'pizza': return [{ at: PIZZA_SCENE.rage, type: 'pizza' }, { at: PIZZA_SCENE.release, type: 'toss', item: 'pizzaBox' }];
+    case 'slots': return [
+      ...perf.slots.rounds.map(({ stop, type }) => ({ at: stop, type: 'phrase', trigger: type })),
+      { at: perf.slots.shout, type: 'phrase', trigger: 'slotsSmash' },
+    ];
+    case 'float': return [{ at: FLOAT.on, type: 'phrase', trigger: 'floatOn' }];
     default: return [];
   }
 }

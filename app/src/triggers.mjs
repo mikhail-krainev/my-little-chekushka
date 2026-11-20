@@ -46,6 +46,12 @@ export const TRIGGER_PHRASES = {
   burger: ['detka', 'tolstaya_morda', 'kto_luchshiy'],   // bragging about the burger: «…сладкая конфетка», a full happy
                                         // face, «Кто лучший? Да я знаю»
   pizza: ['fu', 'pochemu', 'nasri'],    // the plastic pizza: «Что это за хуйня? Фу», «…попробуй говно на вкус»
+  slotsWin: ['vozna'],
+  slotsWinAgain: ['nihuya'],
+  slotsLoss: ['pizdec'],
+  slotsBroke: ['babok'],
+  slotsSmash: ['aaa'],
+  floatOn: ['bystree'],
   vomit: ['pizdec', 'drugaya_dyrka', 'govno_vonyaet'],   // «Да это пиздец!», «Он с другой дырки вылез», «Говно воняет»
   // desktop pranks
   folderPeek: ['eto_on', 'o_blyat', 'podozritelno'],   // peeks into a folder window: «Это он!», «О, блядь», a suspicious stare

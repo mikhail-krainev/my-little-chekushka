@@ -5,6 +5,7 @@ import { MascotController } from './controller.mjs';
 import { describeEvent } from './events.mjs';
 import { MicButton } from './mic.mjs';
 import { Config } from './geometry.mjs';
+import { SLOT_REACH } from './play.mjs';
 import { beginYUp, drawMascot, loadSprites } from './renderer.mjs';
 import { SearchBar } from './searchbar.mjs';
 import { Sfx } from './sfx.mjs';
@@ -122,6 +123,7 @@ function sayFor(trigger, { requested = false, repeat = false } = {}) {
   const bag = triggerBags[trigger];
   if (!bag) return false;
   if (requested) { triggerGate.force(trigger, clock()); say(bag.next()); return true; }
+  if (controller.hasScriptedSpeech) return false;
   if (!triggerGate.allow(trigger, clock(), phrases.isTalking, { repeat })) return false;
   say(bag.next());
   return true;
@@ -157,7 +159,7 @@ const micRect = () => mic.rect(controller.frame, screen.work);
 
 /** Something to fill a long silence, never in the middle of a phrase or in his sleep. */
 function chatterIfDue() {
-  if (chatter.isDue(clock(), !phrases.isTalking && !controller.isSleeping)) sayFor('chatter');
+  if (chatter.isDue(clock(), !phrases.isTalking && !controller.isSleeping && !controller.hasScriptedSpeech)) sayFor('chatter');
 }
 
 function bagsByTrigger(clips) {
@@ -221,6 +223,12 @@ function drawMascotLayer() {
 
   const box = Config.mascotSize;
   const boxRect = { x: controller.pos.x - DIRTY_MARGIN, y: height - controller.pos.y - box.height - DIRTY_MARGIN, w: box.width + 2 * DIRTY_MARGIN, h: box.height + 2 * DIRTY_MARGIN };
+  const slots = controller.pose.effects.slots;
+  if (slots) {
+    const reach = Math.max(0, Math.ceil(SLOT_REACH * Config.spriteScale - boxRect.w / 2)) + 4;
+    if (slots.side < 0) boxRect.x -= reach;
+    boxRect.w += reach;
+  }
   dirty.push(boxRect);
 
   mainCtx.save();

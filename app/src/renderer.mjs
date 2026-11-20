@@ -6,6 +6,7 @@ import * as FX from './pixelfx.mjs';
 import * as Props from './props.mjs';
 import { drawPizzaBox } from './food.mjs';
 import { drawVomit } from './vomit.mjs';
+import { drawFloat, drawSlots, loadPlayArt } from './play-draw.mjs';
 
 /** Switches a canvas context to y-up device-independent units (origin bottom-left of a `height`-tall canvas). */
 export function beginYUp(ctx, height, dpr) {
@@ -36,6 +37,7 @@ export async function loadSprites(baseUrl) {
     await img.decode();
     return [name, { image: img, rect: def.rect, pivot: def.pivot }];
   }));
+  await loadPlayArt();
   sprites = Object.fromEntries(entries);
   return sprites;
 }
@@ -127,14 +129,17 @@ export function drawMascot(ctx, pose, talkingFace = null) {
   drawShadow(ctx, pose);
   if (pose.effects.hookah) drawHookahScene(ctx, pose);
   if (pose.effects.pizzaBox) drawPizzaBoxScene(ctx, pose.effects.pizzaBox);
+  if (pose.effects.slots) drawSlots(ctx, pose.effects.slots);
   ctx.save();
   applyBodyTransform(ctx, pose);
+  if (pose.effects.float) drawFloat(ctx, pose.effects.float, false);
   for (const side of Side.both) drawLeg(ctx, pose, side);
   drawPart(ctx, sprites.body, RefMap.point(241, 581), 0);
   if (talkingFace) drawTalkingFace(ctx, talkingFace);
   else drawFaceOverlay(ctx, pose.face, pose.isBlinking);
   if (pose.prop) drawProp(ctx, pose, pose.prop);
   if (pose.prop2) drawProp(ctx, pose, pose.prop2);
+  if (pose.effects.float) drawFloat(ctx, pose.effects.float, true);
   for (const side of Side.both) drawArm(ctx, pose, side);
   drawBodyEffects(ctx, pose);
   ctx.restore();
@@ -144,7 +149,10 @@ export function drawMascot(ctx, pose, talkingFace = null) {
 
 function drawShadow(ctx, pose) {
   const width = Math.abs(pose.tilt) > 1 ? 130 : 66;
-  FX.ellipse(ctx, { x: MascotRig.centerX, y: 1 }, width / 2, 4, { color: rgb(0, 0, 0, 0.20) });
+  const slots = pose.effects.slots;
+  const x = MascotRig.centerX + (slots?.shadowX ?? 0);
+  const alpha = slots ? 0.20 - Math.min(0.1, slots.shadowHeight / 350) : 0.20;
+  FX.ellipse(ctx, { x, y: 1 }, width / 2, 4, { color: rgb(0, 0, 0, alpha) });
 }
 
 function drawLeg(ctx, pose, side) {

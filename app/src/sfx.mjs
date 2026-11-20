@@ -30,6 +30,13 @@ const RECIPES = {
     s.tone({ f: 110, f2: 50, dur: 0.12, gain: 0.25 });
     for (let i = 0; i < 9; i++) s.tone({ f: 2500 + 3500 * s.random(), dur: 0.1 + 0.1 * s.random(), gain: 0.05, at: 0.18 * s.random() });
   },
+  cabinetCrash: (s) => {
+    s.tone({ f: 114, f2: 34, dur: 0.34, gain: 0.46 });
+    s.noise({ type: 'lowpass', f: 980, f2: 300, dur: 0.36, gain: 0.40 });
+    [0.015, 0.07, 0.14, 0.25].forEach((at) => {
+      s.noise({ type: 'bandpass', f: 1760 + 1700 * s.random(), q: 2.2, dur: 0.14, gain: 0.25, at });
+    });
+  },
   hawk: (s) => s.noise({ type: 'bandpass', f: 350, f2: 280, q: 3, dur: 0.26, gain: 0.25, attack: 0.04 }),
   ptoo: (s) => { s.tone({ f: 520, f2: 200, dur: 0.07, gain: 0.2 }); s.noise({ type: 'bandpass', f: 1300, dur: 0.08, gain: 0.25 }); },
   splat: (s) => s.noise({ type: 'lowpass', f: 900, f2: 300, dur: 0.12, gain: 0.28 }),
@@ -51,6 +58,15 @@ const RECIPES = {
   chew: (s) => s.noise({ type: 'lowpass', f: 650, dur: 0.07, gain: 0.12 }),
   clack: (s) => { s.tone({ f: 1800, dur: 0.03, gain: 0.22 }); s.noise({ type: 'highpass', f: 3000, dur: 0.015, gain: 0.25 }); },
   strain: (s) => s.noise({ type: 'bandpass', f: 600, q: 8, dur: 0.4, gain: 0.1, attack: 0.1 }),
+  vinylCreak: (s) => {
+    s.noise({ type: 'bandpass', f: 720, f2: 1760, q: 7, dur: 0.4, gain: 0.35, attack: 0.075 });
+    s.tone({ f: 295, f2: 505, type: 'triangle', dur: 0.23, gain: 0.13, attack: 0.04, at: 0.055 });
+    s.noise({ type: 'bandpass', f: 1180, f2: 530, q: 4, dur: 0.15, gain: 0.26, at: 0.245 });
+  },
+  spring: (s) => {
+    s.tone({ f: 380, f2: 207, type: 'triangle', dur: 0.15, gain: 0.16 });
+    s.noise({ type: 'bandpass', f: 2400, f2: 970, q: 3, dur: 0.18, gain: 0.21 });
+  },
   flap: (s) => s.noise({ type: 'lowpass', f: 1300, f2: 400, dur: 0.11, gain: 0.3 }),
   punch: (s) => { s.noise({ type: 'lowpass', f: 900, dur: 0.07, gain: 0.35 }); s.tone({ f: 160, f2: 60, dur: 0.1, gain: 0.35 }); },
   key: (s) => { s.noise({ type: 'highpass', f: 2200, dur: 0.02, gain: 0.15 }); s.tone({ f: 1100 + 200 * s.random(), dur: 0.012, gain: 0.04 }); },

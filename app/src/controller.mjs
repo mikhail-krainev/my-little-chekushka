@@ -5,9 +5,10 @@
 import * as Animator from './animator.mjs';
 import { Config, Side, clamp, rand } from './geometry.mjs';
 import { blendPoses, newFace } from './pose.mjs';
-import { emberPoint, handPoint, mouthPoint } from './renderer.mjs';
+import { bodyPoint, emberPoint, handPoint, mouthPoint } from './renderer.mjs';
 import * as Stunts from './stunts.mjs';
 import { soundCues } from './sounds.mjs';
+import { FLOAT, FLOAT_STRIDE, slotPlacement, stepFloat } from './play.mjs';
 
 const SIZE = Config.mascotSize;
 
@@ -23,7 +24,7 @@ const WALL_HIT_SPEED = 700;
  *  speaks at the start too: its clip is the hawk itself, cut so the «тьфу» lands on the release. */
 const SPOKEN_AT_START = new Set(['sit', 'sleep', 'stretch', 'spit']);
 /** Actions done facing the working side. */
-const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza']);
+const SIDED = new Set(['vodka', 'beer', 'spit', 'smoke', 'hookah', 'burger', 'pizza', 'slots']);
 /** How far (px) the mascot's front reaches over the edge of a folder window he peeks into. */
 const PEEK_OVERLAP = 34;
 /** Folder icons: half an icon (px) between the hands and the icon centre, push speed (px/s), push distance range,
@@ -106,11 +107,23 @@ export class MascotController {
   get dir() { return this.facingRight ? 1 : -1; }
   /** Visible sprite rect (without the transparent margin), used to hit-test and to place bubbles. y up. */
   get frame() {
+    if (this.pose.effects.slots) {
+      const centre = bodyPoint(this.pose, { x: 60, y: 90 });
+      const { spritePad, spriteScale } = Config;
+      const spread = Math.abs(Math.sin(this.pose.tilt));
+      const w = (120 + 60 * spread) * spriteScale;
+      const h = (180 - 60 * spread) * spriteScale;
+      return { x: this.pos.x + spritePad + centre.x * spriteScale - w / 2,
+        y: this.pos.y + spritePad + centre.y * spriteScale - h / 2, w, h };
+    }
     return { x: this.pos.x + Config.spritePad, y: this.pos.y + Config.spritePad, w: SIZE.width - 2 * Config.spritePad, h: SIZE.height - 2 * Config.spritePad };
   }
   get isHanging() { return this.state.type === 'hanging' || this.state.type === 'windup'; }
   get isChasingFolder() { return this.state.type === 'chaseFolder'; }
   get isSleeping() { return this.state.type === 'perform' && this.state.perf.kind === 'sleep'; }
+  get hasScriptedSpeech() {
+    return this.state.type === 'perform' && (this.state.perf.kind === 'slots' || this.state.perf.kind === 'float');
+  }
   get canBeInterrupted() { return !['dragged', 'hanging', 'windup', 'air'].includes(this.state.type); }
   get #isBusyWithPrank() { return this.state.type === 'scene' || this.pendingScene !== null; }
 
@@ -235,7 +248,15 @@ export class MascotController {
       }
       case 'perform': {
         const el = t - st.start;
-        pose = Animator.performance(st.perf, el, base);
+        if (st.motion) {
+          if (stepFloat(st.motion, this.pos, b, dt, el)) this.#sound('boing');
+          this.facingRight = st.motion.x > 0;
+          if (el >= FLOAT.run && el < FLOAT.settle) {
+            this.walkPhase = (el - FLOAT.run) * FLOAT_STRIDE;
+            this.#stepSounds(0.75);
+          }
+        }
+        pose = Animator.performance(st.perf, el, base, st.motion);
         this.#fireCues(st.perf, el, base);
         this.#fireSounds(st.perf, el);
         if (el >= st.perf.duration) this.state = { type: 'idle', until: t + rand(0.6, 1.5) };
@@ -356,6 +377,7 @@ export class MascotController {
     if (scene) { this.pendingScene = null; this.pendingPerformance = null; this.#beginScene(scene); return; }
     const p = this.pendingPerformance;
     this.pendingPerformance = null;
+    if (p?.kind === 'slots' && p.runup === undefined && this.#isOnFloor) { this.#schedule(p); return; }
     if (p && this.#isOnFloor) this.#begin(p); else this.state = { type: 'idle', until: this.now + afterIdle };
   }
 
@@ -371,8 +393,10 @@ export class MascotController {
     if (this.#maybePrank()) return;
     const t = this.now, roll = Math.floor(Math.random() * 100);
     const act = (kind) => this.#schedule(Animator.makePerformance(kind, { side: this.dir }));
-    if (roll < 24) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 20, run: false };
-    else if (roll < 34) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 12, run: true };
+    if (roll < 22) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 20, run: false };
+    else if (roll < 30) this.state = { type: 'walk', to: this.#randomPoint(b), until: t + 12, run: true };
+    else if (roll < 32) act('slots');
+    else if (roll < 34) act('float');
     else if (roll < 42) act('sit');
     else if (roll < 49) act('sleep');
     else if (roll < 56) act('stretch');
@@ -390,6 +414,17 @@ export class MascotController {
 
   /** Floor actions start on the floor: hop down first when the mascot is up on the screen. */
   #schedule(perf) {
+    if (perf.kind === 'slots') {
+      const { x, side, runup, flight } = slotPlacement(this.pos, this.env.getScreen().work, perf.side);
+      if (Math.abs(x - this.pos.x) >= 3 || !this.#isOnFloor) {
+        this.pendingPerformance = { ...perf, side, runup, flight };
+        this.pendingScene = null;
+        this.#startJump({ x, y: this.#bounds.minY }, false);
+        return;
+      }
+      this.#begin({ ...perf, side, runup, flight });
+      return;
+    }
     if (this.#isOnFloor) { this.#begin(perf); return; }
     this.pendingPerformance = perf;
     const b = this.#bounds;
@@ -405,6 +440,7 @@ export class MascotController {
     if (p.kind === 'pizza') this.#roomBeside(p, 140);
     if (SIDED.has(p.kind)) this.facingRight = p.side > 0;
     this.state = { type: 'perform', perf: p, start: this.now };
+    if (p.kind === 'float') this.state.motion = { x: p.side, y: 1 };
     if (SPOKEN_AT_START.has(p.kind)) this.#announce(p, p.kind);
   }
 
@@ -445,6 +481,7 @@ export class MascotController {
     const list = Animator.cues(perf);
     while (this.cueIndex < list.length && elapsed >= list[this.cueIndex].at) {
       const cue = list[this.cueIndex++];
+      if (cue.type === 'phrase') { this.#say(cue.trigger); continue; }
       const pose = Animator.performance(perf, cue.at, base);
       switch (cue.type) {
         case 'throw': this.#throwBottle(perf, pose); break;

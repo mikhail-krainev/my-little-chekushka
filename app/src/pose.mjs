@@ -19,6 +19,8 @@ export function newEffects() {
     emberSmoke: 0,         // 0...1 thin smoke curling up from a held cigarette
     hookah: null,          // { side, scale, glow, bubbles, time, distance } hookah standing on the floor
     pizzaBox: null,        // { side, distance, scale, lid, taken } pizza box on the floor
+    slots: null,           // cabinet, stool, and glass shards
+    float: null,           // inflatable ring around the body
   };
 }
 
